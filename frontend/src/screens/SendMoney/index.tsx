@@ -1,8 +1,9 @@
+import { TransferForm } from '../../components/transfer/TransferForm'
+
 export default function SendMoneyScreen() {
   return (
-    <div className="p-4 md:p-6">
-      <h1 className="text-2xl font-bold">Send Money</h1>
-      <p className="text-gray-500">Transfer funds to other accounts.</p>
+    <div className="p-4 md:p-6 lg:p-8 flex flex-col justify-center min-h-[80vh]">
+      <TransferForm />
     </div>
   )
 }
