@@ -1,0 +1,37 @@
+@import "@fontsource/inter";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-emerald: #0F8F5F;
+    --color-emerald-dark: #0B7249;
+    --color-emerald-50: #E8F6EF;
+    --color-emerald-100: #CDEEDE;
+    --color-midnight: #111827;
+    --color-midnight-60: #4B5563;
+    --color-midnight-40: #9CA3AF;
+    --color-lime: #7CFF6B;
+    --color-surface: #FAFAF8;
+    --color-card: #FFFFFF;
+    --color-coral: #EF4444;
+    --color-amber: #F59E0B;
+  }
+
+  body {
+    @apply bg-surface text-midnight font-sans antialiased;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* Accessibility constraint: reset animations when reduced motion is preferred */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
