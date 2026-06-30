@@ -1,12 +1,14 @@
 import { create } from 'zustand'
-import type { PaymentEvent } from '../types/payment'
+import type { PaymentEvent, PaymentSession } from '../types/payment'
 
 interface PaymentState {
   currentAmount: number | null
   waitingForPayment: boolean
   lastPayment: PaymentEvent | null
   confirmationVisible: boolean
+  paymentSession: PaymentSession | null
   setAmount: (amount: number | null) => void
+  setPaymentSession: (session: PaymentSession | null) => void
   startWaiting: () => void
   handlePaymentReceived: (event: PaymentEvent) => void
   dismissConfirmation: () => void
@@ -17,7 +19,9 @@ export const usePaymentStore = create<PaymentState>((set) => ({
   waitingForPayment: false,
   lastPayment: null,
   confirmationVisible: false,
+  paymentSession: null,
   setAmount: (currentAmount) => set({ currentAmount }),
+  setPaymentSession: (paymentSession) => set({ paymentSession }),
   startWaiting: () => set({ waitingForPayment: true, confirmationVisible: false }),
   handlePaymentReceived: (lastPayment) => {
     // Trigger mobile vibration if available
@@ -38,5 +42,6 @@ export const usePaymentStore = create<PaymentState>((set) => ({
     confirmationVisible: false,
     currentAmount: null,
     waitingForPayment: false,
+    paymentSession: null,
   }),
 }))
