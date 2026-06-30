@@ -5,9 +5,11 @@ import { useTransactionStore } from '../../store/transactionStore'
 import { MerchantHeader } from '../../components/dashboard/MerchantHeader'
 import { TransactionCard } from '../../components/transaction/TransactionCard'
 import { AmountDisplay } from '../../components/payment/AmountDisplay'
+import { ReceiptModal } from '../../components/payment/ReceiptModal'
 import { getTopCustomers, getWeeklyRevenue, getDashboardSummary } from '../../services/api'
 import type { Customer, WeeklyBar } from '../../services/api/mocks/fixtures'
 import type { DashboardSummary } from '../../types/merchant'
+import type { Transaction } from '../../types/transaction'
 import { formatNaira } from '../../lib/formatters'
 import { QrCode, Send, ArrowUpRight, TrendingUp, Users, ArrowLeftRight } from 'lucide-react'
 import { cn } from '../../utils/cn'
@@ -22,6 +24,7 @@ export default function DashboardScreen() {
   const [weeklyRevenue, setWeeklyRevenue] = useState<WeeklyBar[]>([])
   const [dashboardSummary, setDashboardSummary] = useState<DashboardSummary | null>(null)
   const [loadingExtras, setLoadingExtras] = useState(false)
+  const [selectedTx, setSelectedTx] = useState<Transaction | null>(null)
 
   useEffect(() => {
     fetchTransactions()
@@ -257,8 +260,7 @@ export default function DashboardScreen() {
                   key={tx.id}
                   transaction={tx}
                   onClick={() => {
-                    // Tap target built (MVP no-op but clickable)
-                    console.log('Clicked transaction row:', tx.id)
+                    setSelectedTx(tx)
                   }}
                 />
               ))}
@@ -267,6 +269,9 @@ export default function DashboardScreen() {
         </div>
 
       </div>
+
+      {/* Sleek Receipt Modal Details Overlay */}
+      <ReceiptModal transaction={selectedTx} onClose={() => setSelectedTx(null)} />
     </div>
   )
 }

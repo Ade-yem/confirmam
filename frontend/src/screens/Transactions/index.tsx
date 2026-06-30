@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useTransactionStore } from '../../store/transactionStore'
 import { TransactionCard } from '../../components/transaction/TransactionCard'
+import { ReceiptModal } from '../../components/payment/ReceiptModal'
+import type { Transaction } from '../../types/transaction'
 import { Search, History, ArrowLeftRight, Inbox } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
@@ -11,6 +13,7 @@ export default function TransactionsScreen() {
   
   const [filter, setFilter] = useState<FilterType>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedTx, setSelectedTx] = useState<Transaction | null>(null)
 
   useEffect(() => {
     fetchTransactions()
@@ -135,14 +138,16 @@ export default function TransactionsScreen() {
                 key={tx.id}
                 transaction={tx}
                 onClick={() => {
-                  // Interactive tap target built
-                  console.log('Tapped ledger row:', tx.id)
+                  setSelectedTx(tx)
                 }}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Sleek Receipt Modal Details Overlay */}
+      <ReceiptModal transaction={selectedTx} onClose={() => setSelectedTx(null)} />
     </div>
   )
 }
