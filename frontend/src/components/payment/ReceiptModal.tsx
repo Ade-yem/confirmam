@@ -31,20 +31,33 @@ export function ReceiptModal({ transaction, onClose }: ReceiptModalProps) {
     }
   }
 
+  const sanitizeForReceipt = (str: string): string => {
+    if (!str) return ''
+    // Allow alphanumeric characters, spaces, hyphens, periods, commas, colons, slashes, and parentheses.
+    // Strip control characters and shell triggers ($, ;, &, |, <, >, etc.)
+    return str.replace(/[^a-zA-Z0-9\s\-.,():/]/g, '')
+  }
+
   // Generates a clean text receipt to share or copy
   const getReceiptText = () => {
+    const cleanSender = sanitizeForReceipt(senderName || '')
+    const cleanRecipient = sanitizeForReceipt(recipientName || '')
+    const cleanBank = sanitizeForReceipt(recipientBank || '')
+    const cleanRef = sanitizeForReceipt(reference || '')
+
     const header = `=== CONFIRMAM TRANSACTION RECEIPT ===\n`
     const type = `Type: ${isIncoming ? 'Received Payment' : 'Sent Transfer'}\n`
     const amountLine = `Amount: ${formatNaira(amount)}\n`
     const party = isIncoming 
-      ? `Sender: ${senderName || 'N/A'}\n` 
-      : `Recipient: ${recipientName || 'N/A'}${recipientBank ? ` (${recipientBank})` : ''}\n`
+      ? `Sender: ${cleanSender || 'N/A'}\n` 
+      : `Recipient: ${cleanRecipient || 'N/A'}${cleanBank ? ` (${cleanBank})` : ''}\n`
     const timeLine = `Date: ${dateStr} ${timeStr}\n`
     const statusLine = `Status: ${status.toUpperCase()}\n`
-    const refLine = `Reference: ${reference}\n`
+    const refLine = `Reference: ${cleanRef}\n`
     const footer = `====================================`
     return `${header}${type}${amountLine}${party}${timeLine}${statusLine}${refLine}${footer}`
   }
+
 
   const handleShare = async () => {
     const text = getReceiptText()

@@ -81,7 +81,16 @@ export default defineConfig({
   server: {
     port: 5173,
   },
-  esbuild: {
-    drop: ['console', 'debugger']
-  } as any,
+  build: {
+    rolldownOptions: {
+      output: {
+        minify: {
+          compress: {
+            dropConsole: true,
+            dropDebugger: true,
+          },
+        },
+      } as any,
+    },
+  },
 })
