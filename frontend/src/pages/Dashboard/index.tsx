@@ -6,12 +6,11 @@ import { MerchantHeader } from '../../components/dashboard/MerchantHeader'
 import { TransactionCard } from '../../components/transaction/TransactionCard'
 import { AmountDisplay } from '../../components/payment/AmountDisplay'
 import { ReceiptModal } from '../../components/payment/ReceiptModal'
-import { getTopCustomers, getWeeklyRevenue, getDashboardSummary } from '../../services/api'
-import type { Customer, WeeklyBar } from '../../services/api/mocks/fixtures'
+import { getDashboardSummary } from '../../services/api'
 import type { DashboardSummary } from '../../types/merchant'
 import type { Transaction } from '../../types/transaction'
 import { formatNaira } from '../../lib/formatters'
-import { QrCode, Send, ArrowUpRight, TrendingUp, Users, ArrowLeftRight, Eye, EyeOff } from 'lucide-react'
+import { QrCode, Send, ArrowUpRight, TrendingUp, ArrowLeftRight, Eye, EyeOff } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
 export default function DashboardScreen() {
@@ -20,10 +19,8 @@ export default function DashboardScreen() {
   const { transactions, isLoading: txLoading, fetchTransactions } = useTransactionStore()
 
   // Extended features local states
-  const [topCustomers, setTopCustomers] = useState<Customer[]>([])
-  const [weeklyRevenue, setWeeklyRevenue] = useState<WeeklyBar[]>([])
   const [dashboardSummary, setDashboardSummary] = useState<DashboardSummary | null>(null)
-  const [loadingExtras, setLoadingExtras] = useState(false)
+  const [loadingSummary, setLoadingSummary] = useState(false)
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null)
 
   // Persist show balance state in localStorage for better UX
@@ -48,31 +45,21 @@ export default function DashboardScreen() {
   }, [fetchTransactions])
 
   useEffect(() => {
-    // Fetch extended data for desktop layout or stats
-    async function loadExtras() {
-      setLoadingExtras(true)
+    async function loadSummary() {
+      setLoadingSummary(true)
       try {
-        const [customers, weekly, summary] = await Promise.all([
-          getTopCustomers(),
-          getWeeklyRevenue(),
-          getDashboardSummary()
-        ])
-        setTopCustomers(customers)
-        setWeeklyRevenue(weekly)
+        const summary = await getDashboardSummary()
         setDashboardSummary(summary)
       } catch (err) {
-        console.error('Failed to load dashboard extras:', err)
+        console.error('Failed to load dashboard summary:', err)
       } finally {
-        setLoadingExtras(false)
+        setLoadingSummary(false)
       }
     }
-    loadExtras()
+    loadSummary()
   }, [])
 
-  const isLoading = storeLoading || txLoading || loadingExtras
-  const maxWeeklyAmount = weeklyRevenue.length > 0 
-    ? Math.max(...weeklyRevenue.map(d => d.amount)) 
-    : 1
+  const isLoading = storeLoading || txLoading || loadingSummary
 
   // Filter today's transactions for the mini recent feed
   const recentTransactions = transactions.slice(0, 5)
@@ -91,9 +78,9 @@ export default function DashboardScreen() {
           - Tablet (md): 2 columns
           - Desktop (lg): 3 columns
       */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
-        {/* ================= COLUMN 1 ================= */}
+        {/* Left Column: Summary and Actions */}
         <div className="space-y-6">
           {/* Revenue Card (Dark styled) */}
           {isLoading ? (
@@ -190,76 +177,8 @@ export default function DashboardScreen() {
           )}
         </div>
 
-        {/* ================= COLUMN 2 (Center: Custom Weekly Chart & Top Customers) ================= */}
-        <div className="space-y-6 md:col-span-1 lg:col-span-1">
-          {/* Custom CSS Weekly Chart (Desktop/Tablet extension) */}
-          {isLoading ? (
-            <div className="h-56 bg-gray-100 animate-pulse rounded-2xl" />
-          ) : (
-            <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-card flex flex-col justify-between min-h-56">
-              <div>
-                <h3 className="text-sm font-bold text-midnight tracking-tight">Weekly Performance</h3>
-                <p className="text-[11px] font-semibold text-midnight-40">Naira volume by day</p>
-              </div>
-
-              {/* Pure CSS Bar Chart */}
-              <div className="flex items-end justify-between gap-1.5 h-28 mt-4 px-2 select-none">
-                {weeklyRevenue.map((dayData) => {
-                  const relativeHeight = (dayData.amount / maxWeeklyAmount) * 100
-                  return (
-                    <div 
-                      key={dayData.day} 
-                      className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group relative"
-                    >
-                      {/* CSS Tooltip on Hover */}
-                      <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 bg-midnight text-white text-[9px] font-bold py-1 px-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap mb-1 z-10 shadow-md">
-                        {formatNaira(dayData.amount)}
-                      </span>
-                      {/* Bar fill */}
-                      <div
-                        style={{ height: `${relativeHeight}%` }}
-                        className="w-full bg-emerald/15 group-hover:bg-emerald rounded-t-md transition-all duration-300 min-h-[4px]"
-                      />
-                      <span className="text-[10px] font-bold text-midnight-40">
-                        {dayData.day}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Top Customers Panel (Desktop/Tablet extension) */}
-          {isLoading ? (
-            <div className="h-60 bg-gray-100 animate-pulse rounded-2xl" />
-          ) : (
-            <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-card">
-              <div className="flex items-center gap-1.5 mb-4">
-                <Users className="w-4 h-4 text-emerald" />
-                <h3 className="text-sm font-bold text-midnight tracking-tight">Top Customers</h3>
-              </div>
-              <div className="space-y-3">
-                {topCustomers.map((c) => (
-                  <div key={c.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                    <div>
-                      <span className="text-xs font-bold text-midnight block">{c.name}</span>
-                      <span className="text-[10px] font-semibold text-midnight-40 block mt-0.5">
-                        {c.paymentCount} payments received
-                      </span>
-                    </div>
-                    <span className="text-xs font-bold text-emerald">
-                      {formatNaira(c.totalSpent)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* ================= COLUMN 3 (Right: Recent Activity) ================= */}
-        <div className="md:col-span-2 lg:col-span-1 bg-white p-5 rounded-2xl border border-gray-100 shadow-card flex flex-col min-h-[400px]">
+        {/* Right Column: Recent Activity */}
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-card flex flex-col min-h-[400px]">
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-1.5">
               <ArrowLeftRight className="w-4 h-4 text-emerald" />

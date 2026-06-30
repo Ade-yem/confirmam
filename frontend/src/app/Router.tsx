@@ -1,10 +1,10 @@
 import { Routes, Route } from 'react-router-dom'
 import { AppLayout } from '../layouts/AppLayout'
-import DashboardScreen from '../screens/Dashboard'
-import ReceivePaymentScreen from '../screens/ReceivePayment'
-import SendMoneyScreen from '../screens/SendMoney'
-import TransactionsScreen from '../screens/Transactions'
-import ProfileScreen from '../screens/Profile'
+import DashboardScreen from '../pages/Dashboard'
+import ReceivePaymentScreen from '../pages/ReceivePayment'
+import SendMoneyScreen from '../pages/SendMoney'
+import TransactionsScreen from '../pages/Transactions'
+import ProfileScreen from '../pages/Profile'
 
 export function AppRouter() {
   return (

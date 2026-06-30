@@ -8,7 +8,7 @@ export default function ProfileScreen() {
   const { speak } = useVoice()
 
   const handleTestVoice = () => {
-    speak('Payment of 5000 Naira received from test customer.')
+    speak('Payment received from test customer.')
   }
 
   if (isLoading) {
@@ -99,8 +99,7 @@ export default function ProfileScreen() {
         </div>
         
         <p className="text-xs text-midnight-60 font-medium leading-relaxed select-none">
-          Your payment terminal reads aloud transaction alerts through the SpeechSynthesis API. 
-          Use the button below to test the sound levels on this device.
+          Your payment terminal reads aloud transaction alerts to let you confirm payments even when you're not using your phone.
         </p>
 
         <button

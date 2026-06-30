@@ -31,7 +31,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           - Tablet (md): pl-24 (width of the left nav rail).
           - Desktop (lg): pl-60 (width of the left sidebar).
         */}
-        <main className="flex-1 pb-20 md:pb-0 md:pl-24 lg:pl-60">
+        <main className="flex-1 pb-24">
           <div className="max-w-7xl mx-auto w-full min-h-full">
             {children}
           </div>
