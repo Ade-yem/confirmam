@@ -11,7 +11,7 @@ import type { Customer, WeeklyBar } from '../../services/api/mocks/fixtures'
 import type { DashboardSummary } from '../../types/merchant'
 import type { Transaction } from '../../types/transaction'
 import { formatNaira } from '../../lib/formatters'
-import { QrCode, Send, ArrowUpRight, TrendingUp, Users, ArrowLeftRight } from 'lucide-react'
+import { QrCode, Send, ArrowUpRight, TrendingUp, Users, ArrowLeftRight, Eye, EyeOff } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
 export default function DashboardScreen() {
@@ -25,6 +25,23 @@ export default function DashboardScreen() {
   const [dashboardSummary, setDashboardSummary] = useState<DashboardSummary | null>(null)
   const [loadingExtras, setLoadingExtras] = useState(false)
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null)
+
+  // Persist show balance state in localStorage for better UX
+  const [showBalance, setShowBalance] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('confirmam_show_balance')
+      return saved !== 'false' // default to true
+    }
+    return true
+  })
+
+  const toggleBalance = () => {
+    setShowBalance((prev) => {
+      const next = !prev
+      localStorage.setItem('confirmam_show_balance', String(next))
+      return next
+    })
+  }
 
   useEffect(() => {
     fetchTransactions()
@@ -85,14 +102,33 @@ export default function DashboardScreen() {
             <div className="p-6 bg-midnight text-white rounded-2xl shadow-soft relative overflow-hidden flex flex-col justify-between h-44">
               <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-8 -mt-8" />
               <div>
-                <span className="text-[10px] font-bold text-midnight-40 uppercase tracking-widest block">
-                  TODAY'S REVENUE
-                </span>
-                <AmountDisplay 
-                  amount={todayRevenue} 
-                  size="display-sm" 
-                  className="text-white font-extrabold mt-1" 
-                />
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-midnight-40 uppercase tracking-widest block">
+                    TODAY'S REVENUE
+                  </span>
+                  <button
+                    type="button"
+                    onClick={toggleBalance}
+                    className="text-midnight-40 hover:text-white p-1 transition-colors outline-none focus:ring-2 focus:ring-emerald-50 rounded"
+                    aria-label={showBalance ? "Hide balance" : "Show balance"}
+                  >
+                    {showBalance ? <EyeOff className="w-4 h-4 text-midnight-40 hover:text-white" /> : <Eye className="w-4 h-4 text-midnight-40 hover:text-white" />}
+                  </button>
+                </div>
+                {showBalance ? (
+                  <AmountDisplay 
+                    amount={todayRevenue} 
+                    size="display-sm" 
+                    className="text-white font-extrabold mt-1" 
+                  />
+                ) : (
+                  <div 
+                    aria-label="Balance hidden" 
+                    className="text-white font-extrabold text-[48px] leading-none mt-1 select-none font-mono"
+                  >
+                    ₦ ••••
+                  </div>
+                )}
               </div>
               <div className="flex items-center justify-between border-t border-white/10 pt-4 mt-2">
                 <span className="text-xs font-semibold text-midnight-40">
