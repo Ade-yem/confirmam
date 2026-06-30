@@ -100,8 +100,8 @@ export default function DashboardScreen() {
             <div className="h-44 bg-gray-100 animate-pulse rounded-2xl" />
           ) : (
             <div className="p-6 bg-midnight text-white rounded-2xl shadow-soft relative overflow-hidden flex flex-col justify-between h-44">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-8 -mt-8" />
-              <div>
+              <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-8 -mt-8 pointer-events-none" />
+              <div className="relative z-10">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold text-midnight-40 uppercase tracking-widest block">
                     TODAY'S REVENUE
