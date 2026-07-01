@@ -1,5 +1,19 @@
 import { useState, useCallback, useEffect } from 'react'
 
+// Shared module-level AudioContext singleton to prevent hardware node leakage
+let sharedAudioCtx: AudioContext | null = null
+
+function getSharedAudioContext(): AudioContext | null {
+  if (typeof window === 'undefined') return null
+  if (!sharedAudioCtx) {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+    if (AudioContextClass) {
+      sharedAudioCtx = new AudioContextClass()
+    }
+  }
+  return sharedAudioCtx
+}
+
 export function useVoice() {
   const [isSpeaking, setIsSpeaking] = useState(false)
 
@@ -16,13 +30,15 @@ export function useVoice() {
   }, [])
 
   // Offline-resilient dual-frequency soft chime synthesizer using Web Audio API
-  const playChime = useCallback(() => {
-    if (typeof window === 'undefined') return
-    try {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
-      if (!AudioContextClass) return
+  const playChime = useCallback(async () => {
+    const ctx = getSharedAudioContext()
+    if (!ctx) return
 
-      const ctx = new AudioContextClass()
+    try {
+      // Resume context if suspended by browser autoplay policies
+      if (ctx.state === 'suspended') {
+        await ctx.resume()
+      }
 
       // Tone 1: Mid-high pitch (A5 = 880 Hz)
       const osc1 = ctx.createOscillator()
