@@ -86,7 +86,7 @@ export default function DashboardScreen() {
           {isLoading ? (
             <div className="h-44 bg-gray-100 animate-pulse rounded-2xl" />
           ) : (
-            <div className="p-6 bg-midnight text-white rounded-2xl shadow-soft relative overflow-hidden flex flex-col justify-between h-44">
+            <div className="p-6 bg-midnight text-white rounded-2xl shadow-neu-flat-dark relative overflow-hidden flex flex-col justify-between h-44">
               <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-8 -mt-8 pointer-events-none" />
               <div className="relative z-10">
                 <div className="flex items-center justify-between">
@@ -130,9 +130,9 @@ export default function DashboardScreen() {
           <div className="grid grid-cols-2 gap-4">
             <button
               onClick={() => navigate('/receive')}
-              className="p-4 bg-white hover:bg-emerald-50 text-midnight hover:text-emerald-dark rounded-2xl border border-gray-100 shadow-card flex flex-col items-center justify-center gap-2 group transition-all"
+              className="p-4 bg-surface hover:bg-surface text-midnight rounded-2xl border border-white/60 shadow-neu-flat hover:shadow-neu-pressed active:shadow-neu-pressed flex flex-col items-center justify-center gap-2 group transition-all"
             >
-              <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald group-hover:bg-emerald group-hover:text-white flex items-center justify-center transition-colors">
+              <div className="w-10 h-10 rounded-full bg-surface shadow-neu-flat group-hover:shadow-neu-pressed group-active:shadow-neu-pressed text-emerald flex items-center justify-center transition-all">
                 <QrCode className="w-5 h-5" />
               </div>
               <span className="text-xs font-bold">Receive Payment</span>
@@ -140,9 +140,9 @@ export default function DashboardScreen() {
             
             <button
               onClick={() => navigate('/send')}
-              className="p-4 bg-white hover:bg-emerald-50 text-midnight hover:text-emerald-dark rounded-2xl border border-gray-100 shadow-card flex flex-col items-center justify-center gap-2 group transition-all"
+              className="p-4 bg-surface hover:bg-surface text-midnight rounded-2xl border border-white/60 shadow-neu-flat hover:shadow-neu-pressed active:shadow-neu-pressed flex flex-col items-center justify-center gap-2 group transition-all"
             >
-              <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald group-hover:bg-emerald group-hover:text-white flex items-center justify-center transition-colors">
+              <div className="w-10 h-10 rounded-full bg-surface shadow-neu-flat group-hover:shadow-neu-pressed group-active:shadow-neu-pressed text-emerald flex items-center justify-center transition-all">
                 <Send className="w-5 h-5" />
               </div>
               <span className="text-xs font-bold">Send Money</span>
@@ -153,7 +153,7 @@ export default function DashboardScreen() {
           {isLoading ? (
             <div className="h-32 bg-gray-100 animate-pulse rounded-2xl" />
           ) : (
-            <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-card grid grid-cols-2 gap-4">
+            <div className="bg-surface p-5 rounded-2xl border border-white/60 shadow-neu-flat grid grid-cols-2 gap-4">
               <div className="border-r border-gray-100 pr-2">
                 <span className="text-[10px] font-bold text-midnight-40 uppercase tracking-wider block">
                   AVG PAYMENT
@@ -178,7 +178,7 @@ export default function DashboardScreen() {
         </div>
 
         {/* Right Column: Recent Activity */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-card flex flex-col min-h-[400px]">
+        <div className="bg-surface p-5 rounded-2xl border border-white/60 shadow-neu-flat flex flex-col min-h-[400px]">
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-1.5">
               <ArrowLeftRight className="w-4 h-4 text-emerald" />

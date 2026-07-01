@@ -49,6 +49,13 @@ export default {
         soft: '0 8px 24px rgba(17, 24, 39, 0.06)',
         card: '0 2px 8px rgba(17, 24, 39, 0.04)',
         cta: '0 8px 20px rgba(15, 143, 95, 0.40)',
+        // Neumorphic Soft UI Shadow Tokens
+        'neu-flat': '5px 5px 10px #eaeaea, -5px -5px 10px #ffffff',
+        'neu-pressed': 'inset 4px 4px 8px #eaeaea, inset -4px -4px 8px #ffffff',
+        'neu-flat-emerald': '5px 5px 10px #d6ebe0, -5px -5px 10px #ffffff',
+        'neu-pressed-emerald': 'inset 4px 4px 8px #c5e3d2, inset -4px -4px 8px #ffffff',
+        'neu-flat-dark': '5px 5px 10px #090d15, -5px -5px 10px #192339',
+        'neu-pressed-dark': 'inset 4px 4px 8px #090d15, inset -4px -4px 8px #192339',
       },
       screens: {
         md: '768px',

@@ -37,8 +37,8 @@ export function TransactionCard({ transaction, onClick }: TransactionCardProps) 
         }
       }}
       className={cn(
-        "flex items-center justify-between p-4 bg-white rounded-lg shadow-card hover:shadow-md transition-shadow cursor-pointer select-none",
-        "border border-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald focus:ring-offset-1"
+        "flex items-center justify-between p-4 bg-surface rounded-lg shadow-neu-flat hover:shadow-neu-pressed active:shadow-neu-pressed transition-all cursor-pointer select-none",
+        "border border-white/50 focus:outline-none focus:ring-2 focus:ring-emerald focus:ring-offset-1"
       )}
     >
       <div className="flex items-center gap-3.5">

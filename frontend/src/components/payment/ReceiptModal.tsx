@@ -225,10 +225,10 @@ export function ReceiptModal({ transaction, onClose }: ReceiptModalProps) {
                 type="button"
                 onClick={handleWhatsAppShare}
                 className="flex-1 h-11 bg-[#25D366] hover:bg-[#20BA5A] text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 select-none"
-                title="Share via WhatsApp"
+                title="Share"
               >
                 <Share2 className="w-4 h-4" />
-                <span>WhatsApp Share</span>
+                <span>Share</span>
               </button>
             )}
             
