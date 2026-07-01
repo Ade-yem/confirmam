@@ -61,30 +61,32 @@ export function ReceiptModal({ transaction, onClose }: ReceiptModalProps) {
 
   const handleShare = async () => {
     const text = getReceiptText()
-    
-    if (typeof navigator.share !== 'undefined') {
-      try {
-        await navigator.share({
-          title: 'ConfirmAm Transaction Receipt',
-          text: text,
-        })
-        setShared(true)
-        setTimeout(() => setShared(false), 2000)
-      } catch (err) {
-        // Ignore user cancellation
-        if ((err as Error).name !== 'AbortError') {
-          console.error('Failed to share:', err)
-        }
+    try {
+      await navigator.share({
+        title: 'ConfirmAm Transaction Receipt',
+        text: text,
+      })
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') {
+        console.error('Failed to share:', err)
       }
-    } else {
-      // Fallback: Copy full text receipt to clipboard
-      try {
-        await navigator.clipboard.writeText(text)
-        setShared(true)
-        setTimeout(() => setShared(false), 2000)
-      } catch (err) {
-        console.error('Failed to copy receipt text:', err)
-      }
+    }
+  }
+
+  const handleWhatsAppShare = () => {
+    const text = getReceiptText()
+    const url = `https://wa.me/?text=${encodeURIComponent(text)}`
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
+
+  const handleCopyFullReceipt = async () => {
+    const text = getReceiptText()
+    try {
+      await navigator.clipboard.writeText(text)
+      setShared(true)
+      setTimeout(() => setShared(false), 2000)
+    } catch (err) {
+      console.error('Failed to copy receipt text:', err)
     }
   }
 
@@ -207,20 +209,43 @@ export function ReceiptModal({ transaction, onClose }: ReceiptModalProps) {
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 bg-gray-50 border-t border-gray-100 flex gap-3">
-          <button
-            type="button"
-            onClick={handleShare}
-            className="flex-1 h-12 bg-emerald hover:bg-emerald-dark text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 select-none"
-          >
-            <Share2 className="w-4 h-4" />
-            <span>{typeof navigator.share !== 'undefined' ? 'Share Receipt' : 'Copy Receipt'}</span>
-          </button>
+        <div className="p-4 bg-gray-50 border-t border-gray-100 space-y-2">
+          <div className="flex gap-2">
+            {typeof navigator.share !== 'undefined' ? (
+              <button
+                type="button"
+                onClick={handleShare}
+                className="flex-1 h-11 bg-emerald hover:bg-emerald-dark text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 select-none"
+              >
+                <Share2 className="w-4 h-4" />
+                <span>Share Receipt</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleWhatsAppShare}
+                className="flex-1 h-11 bg-[#25D366] hover:bg-[#20BA5A] text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 select-none"
+                title="Share via WhatsApp"
+              >
+                <Share2 className="w-4 h-4" />
+                <span>WhatsApp Share</span>
+              </button>
+            )}
+            
+            <button
+              type="button"
+              onClick={handleCopyFullReceipt}
+              className="flex-1 h-11 bg-white border border-gray-200 hover:bg-gray-50 text-midnight font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 select-none"
+            >
+              <Copy className="w-4 h-4" />
+              <span>Copy Text</span>
+            </button>
+          </div>
           
           <button
             type="button"
             onClick={onClose}
-            className="h-12 px-6 border border-gray-200 hover:bg-gray-100 text-midnight text-xs font-bold rounded-xl transition-all select-none"
+            className="w-full h-11 border border-gray-200 hover:bg-gray-100 text-midnight text-xs font-bold rounded-xl transition-all select-none"
           >
             Close
           </button>
@@ -229,12 +254,12 @@ export function ReceiptModal({ transaction, onClose }: ReceiptModalProps) {
         {/* Copy confirmation toast */}
         <div
           className={cn(
-            "absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-midnight text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg transition-all duration-300 pointer-events-none z-10 flex items-center gap-1.5",
+            "absolute bottom-24 left-1/2 transform -translate-x-1/2 bg-midnight text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg transition-all duration-300 pointer-events-none z-10 flex items-center gap-1.5",
             shared ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
           )}
         >
           <Check className="w-3.5 h-3.5 text-lime" />
-          <span>{typeof navigator.share !== 'undefined' ? 'Receipt shared!' : 'Receipt copied to clipboard!'}</span>
+          <span>Receipt copied to clipboard!</span>
         </div>
       </div>
     </div>
