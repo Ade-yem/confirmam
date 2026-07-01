@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import type { Transaction } from '../../types/transaction'
 import { StatusBadge } from '../common/StatusBadge'
 import { formatNaira, formatDate, formatTime } from '../../lib/formatters'
-import { X, Share2, Copy, Check, FileText, ArrowDownLeft, ArrowUpRight } from 'lucide-react'
+import { X, Share2, Copy, Check, FileText, ArrowDownLeft, ArrowUpRight, FileImage, Loader2 } from 'lucide-react'
 import { cn } from '../../utils/cn'
+import * as htmlToImage from 'html-to-image'
+import { jsPDF } from 'jspdf'
 
 interface ReceiptModalProps {
   transaction: Transaction | null
@@ -12,7 +14,12 @@ interface ReceiptModalProps {
 
 export function ReceiptModal({ transaction, onClose }: ReceiptModalProps) {
   const [copied, setCopied] = useState(false)
-  const [shared, setShared] = useState(false)
+  const [toastOpen, setToastOpen] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+  const [sharePickerOpen, setSharePickerOpen] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
+  
+  const receiptRef = useRef<HTMLDivElement>(null)
 
   if (!transaction) return null
 
@@ -31,15 +38,13 @@ export function ReceiptModal({ transaction, onClose }: ReceiptModalProps) {
     }
   }
 
-  const sanitizeForReceipt = (str: string): string => {
-    if (!str) return ''
-    // Allow alphanumeric characters, spaces, hyphens, periods, commas, colons, slashes, and parentheses.
-    // Strip control characters and shell triggers ($, ;, &, |, <, >, etc.)
-    return str.replace(/[^a-zA-Z0-9\s\-.,():/]/g, '')
-  }
-
-  // Generates a clean text receipt to share or copy
+  // Text fallback format for clipboard copying
   const getReceiptText = () => {
+    const sanitizeForReceipt = (str: string): string => {
+      if (!str) return ''
+      return str.replace(/[^a-zA-Z0-9\s\-.,():/]/g, '')
+    }
+
     const cleanSender = sanitizeForReceipt(senderName || '')
     const cleanRecipient = sanitizeForReceipt(recipientName || '')
     const cleanBank = sanitizeForReceipt(recipientBank || '')
@@ -58,35 +63,100 @@ export function ReceiptModal({ transaction, onClose }: ReceiptModalProps) {
     return `${header}${type}${amountLine}${party}${timeLine}${statusLine}${refLine}${footer}`
   }
 
-
-  const handleShare = async () => {
-    const text = getReceiptText()
-    try {
-      await navigator.share({
-        title: 'ConfirmAm Transaction Receipt',
-        text: text,
-      })
-    } catch (err) {
-      if ((err as Error).name !== 'AbortError') {
-        console.error('Failed to share:', err)
-      }
-    }
-  }
-
-  const handleWhatsAppShare = () => {
-    const text = getReceiptText()
-    const url = `https://wa.me/?text=${encodeURIComponent(text)}`
-    window.open(url, '_blank', 'noopener,noreferrer')
-  }
-
-  const handleCopyFullReceipt = async () => {
+  const handleCopyText = async () => {
     const text = getReceiptText()
     try {
       await navigator.clipboard.writeText(text)
-      setShared(true)
-      setTimeout(() => setShared(false), 2000)
+      setToastMessage('Receipt text copied!')
+      setToastOpen(true)
+      setTimeout(() => setToastOpen(false), 2000)
     } catch (err) {
       console.error('Failed to copy receipt text:', err)
+    }
+  }
+
+  // Generates and shares/downloads PNG or PDF file
+  const handleShareAs = async (format: 'image' | 'pdf') => {
+    if (!receiptRef.current) return
+    setIsGenerating(true)
+    setSharePickerOpen(false)
+
+    try {
+      // Small timeout to let the overlay menu close and avoid visual glitch
+      await new Promise((resolve) => setTimeout(resolve, 150))
+
+      // Generate high-quality PNG image of the receipt body card
+      const dataUrl = await htmlToImage.toPng(receiptRef.current, {
+        backgroundColor: '#ffffff',
+        style: {
+          borderRadius: '0', // Keep clean flat card borders for printing
+        },
+        pixelRatio: 2, // High resolution scaling
+      })
+
+      const fileName = `confirmam_receipt_${reference || 'tx'}`
+
+      if (format === 'image') {
+        const response = await fetch(dataUrl)
+        const blob = await response.blob()
+        const file = new File([blob], `${fileName}.png`, { type: 'image/png' })
+
+        // Check if Web Share API supports file sharing
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: 'ConfirmAm Receipt',
+            text: `Payment Receipt: ${formatNaira(amount)}`,
+          })
+        } else {
+          // Fallback: Trigger direct browser download
+          const link = document.createElement('a')
+          link.download = `${fileName}.png`
+          link.href = dataUrl
+          link.click()
+          
+          setToastMessage('Receipt Image downloaded!')
+          setToastOpen(true)
+          setTimeout(() => setToastOpen(false), 2000)
+        }
+      } else {
+        // PDF generation
+        const imgWidth = receiptRef.current.offsetWidth
+        const imgHeight = receiptRef.current.offsetHeight
+
+        const pdf = new jsPDF({
+          orientation: imgWidth > imgHeight ? 'landscape' : 'portrait',
+          unit: 'px',
+          format: [imgWidth, imgHeight]
+        })
+
+        pdf.addImage(dataUrl, 'PNG', 0, 0, imgWidth, imgHeight)
+        const pdfBlob = pdf.output('blob')
+        const file = new File([pdfBlob], `${fileName}.pdf`, { type: 'application/pdf' })
+
+        // Check if Web Share API supports file sharing
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: 'ConfirmAm Receipt',
+            text: `Payment Receipt: ${formatNaira(amount)}`,
+          })
+        } else {
+          // Fallback: Trigger direct PDF download
+          pdf.save(`${fileName}.pdf`)
+          
+          setToastMessage('Receipt PDF downloaded!')
+          setToastOpen(true)
+          setTimeout(() => setToastOpen(false), 2000)
+        }
+      }
+    } catch (err) {
+      console.error('Failed to generate sharing file:', err)
+      setToastMessage('Generation failed. Please try again.')
+      setToastOpen(true)
+      setTimeout(() => setToastOpen(false), 2000)
+    } finally {
+      setIsGenerating(false)
     }
   }
 
@@ -106,7 +176,7 @@ export function ReceiptModal({ transaction, onClose }: ReceiptModalProps) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top bar */}
-        <div className="flex justify-between items-center px-5 py-4 border-b border-gray-50">
+        <div className="flex justify-between items-center px-5 py-4 border-b border-gray-50 bg-white relative z-20">
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-emerald" />
             <span id="receipt-title" className="text-xs font-bold text-midnight uppercase tracking-wider">
@@ -123,9 +193,11 @@ export function ReceiptModal({ transaction, onClose }: ReceiptModalProps) {
           </button>
         </div>
 
-        {/* Receipt Body (Paper theme) */}
-        <div className="p-6 space-y-6">
-          
+        {/* Receipt Body (Paper theme container, captured for Image/PDF) */}
+        <div 
+          ref={receiptRef} 
+          className="p-6 space-y-6 bg-white select-none relative"
+        >
           {/* Status & Amount Header */}
           <div className="text-center space-y-2">
             <div
@@ -149,7 +221,7 @@ export function ReceiptModal({ transaction, onClose }: ReceiptModalProps) {
             <div className="text-3xl font-extrabold text-midnight tracking-tight select-all">
               {formatNaira(amount)}
             </div>
-            <StatusBadge status={status} className="mt-1" />
+            <StatusBadge status={status} className="mt-1 mx-auto" />
           </div>
 
           {/* Receipt Dotted line separator */}
@@ -205,36 +277,28 @@ export function ReceiptModal({ transaction, onClose }: ReceiptModalProps) {
               </div>
             </div>
           </div>
-
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 bg-gray-50 border-t border-gray-100 space-y-2">
+        <div className="p-4 bg-gray-50 border-t border-gray-100 space-y-2 relative z-20">
           <div className="flex gap-2">
-            {typeof navigator.share !== 'undefined' ? (
-              <button
-                type="button"
-                onClick={handleShare}
-                className="flex-1 h-11 bg-emerald hover:bg-emerald-dark text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 select-none"
-              >
+            <button
+              type="button"
+              disabled={isGenerating}
+              onClick={() => setSharePickerOpen(!sharePickerOpen)}
+              className="flex-1 h-11 bg-emerald hover:bg-emerald-dark disabled:bg-emerald-light text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 select-none"
+            >
+              {isGenerating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
                 <Share2 className="w-4 h-4" />
-                <span>Share Receipt</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleWhatsAppShare}
-                className="flex-1 h-11 bg-[#25D366] hover:bg-[#20BA5A] text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 select-none"
-                title="Share"
-              >
-                <Share2 className="w-4 h-4" />
-                <span>Share</span>
-              </button>
-            )}
+              )}
+              <span>{isGenerating ? 'Generating...' : 'Share Receipt'}</span>
+            </button>
             
             <button
               type="button"
-              onClick={handleCopyFullReceipt}
+              onClick={handleCopyText}
               className="flex-1 h-11 bg-white border border-gray-200 hover:bg-gray-50 text-midnight font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 select-none"
             >
               <Copy className="w-4 h-4" />
@@ -251,15 +315,64 @@ export function ReceiptModal({ transaction, onClose }: ReceiptModalProps) {
           </button>
         </div>
 
-        {/* Copy confirmation toast */}
+        {/* Share format picker Overlay (Slide-up Neumorphic menu) */}
+        {sharePickerOpen && (
+          <div className="absolute inset-0 bg-midnight/35 backdrop-blur-[2px] z-30 flex flex-col justify-end p-4 animate-fade-in">
+            {/* Click backdrop to close picker */}
+            <div className="absolute inset-0" onClick={() => setSharePickerOpen(false)} />
+            
+            <div className="relative z-10 bg-surface rounded-2xl p-4 border border-white/80 shadow-neu-flat animate-spring-in space-y-3">
+              <div className="text-center">
+                <span className="text-[10px] font-bold text-midnight-40 uppercase tracking-widest">
+                  Share Format
+                </span>
+                <p className="text-xs text-midnight font-semibold mt-0.5">Select preferred file document type</p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleShareAs('image')}
+                  className="p-4 bg-surface hover:bg-surface border border-white/60 shadow-neu-flat hover:shadow-neu-pressed active:shadow-neu-pressed rounded-xl flex flex-col items-center gap-2 group transition-all text-midnight"
+                >
+                  <div className="w-9 h-9 rounded-full bg-surface shadow-neu-flat group-hover:shadow-neu-pressed text-emerald flex items-center justify-center transition-all">
+                    <FileImage className="w-4.5 h-4.5" />
+                  </div>
+                  <span className="text-[11px] font-bold">Image (PNG)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleShareAs('pdf')}
+                  className="p-4 bg-surface hover:bg-surface border border-white/60 shadow-neu-flat hover:shadow-neu-pressed active:shadow-neu-pressed rounded-xl flex flex-col items-center gap-2 group transition-all text-midnight"
+                >
+                  <div className="w-9 h-9 rounded-full bg-surface shadow-neu-flat group-hover:shadow-neu-pressed text-emerald flex items-center justify-center transition-all">
+                    <FileText className="w-4.5 h-4.5" />
+                  </div>
+                  <span className="text-[11px] font-bold">Document (PDF)</span>
+                </button>
+              </div>
+              
+              <button
+                type="button"
+                onClick={() => setSharePickerOpen(false)}
+                className="w-full h-10 border border-gray-200 bg-white hover:bg-gray-50 text-midnight text-xs font-bold rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Copy/Download confirmation toast */}
         <div
           className={cn(
-            "absolute bottom-24 left-1/2 transform -translate-x-1/2 bg-midnight text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg transition-all duration-300 pointer-events-none z-10 flex items-center gap-1.5",
-            shared ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
+            "absolute bottom-24 left-1/2 transform -translate-x-1/2 bg-midnight text-white text-xs font-semibold px-4 py-2 rounded-full shadow-lg transition-all duration-300 pointer-events-none z-40 flex items-center gap-1.5",
+            toastOpen ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
           )}
         >
           <Check className="w-3.5 h-3.5 text-lime" />
-          <span>Receipt copied to clipboard!</span>
+          <span>{toastMessage}</span>
         </div>
       </div>
     </div>
