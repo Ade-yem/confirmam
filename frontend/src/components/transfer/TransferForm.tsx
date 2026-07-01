@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { getBanks, resolveAccountName, sendMoney } from '../../services/api'
 import type { Bank } from '../../services/api/mocks/fixtures'
-import type { TransferResult } from '../../types/transaction'
+import type { TransferResult, Transaction } from '../../types/transaction'
+import { useTransactionStore } from '../../store/transactionStore'
 import { formatNaira, formatAccountNumber } from '../../lib/formatters'
 import { Search, Loader2, Check, AlertCircle, ArrowLeft, ArrowRight, Delete } from 'lucide-react'
 import { cn } from '../../utils/cn'
@@ -11,11 +12,14 @@ type Step = 'bank' | 'account' | 'resolve' | 'amount' | 'confirm' | 'result'
 export function TransferForm() {
   const [step, setStep] = useState<Step>('bank')
   
+  const { prependTransaction } = useTransactionStore()
+  
   // Form fields
   const [banks, setBanks] = useState<Bank[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedBank, setSelectedBank] = useState<Bank | null>(null)
   const [accountNumber, setAccountNumber] = useState('')
+  const [lastVerifiedNumber, setLastVerifiedNumber] = useState('')
   const [resolvedName, setResolvedName] = useState('')
   const [amount, setAmount] = useState<number>(0)
   
@@ -39,14 +43,20 @@ export function TransferForm() {
 
   // Auto-advance to name resolution when 10 digits are typed in Step 2
   useEffect(() => {
-    if (step === 'account' && accountNumber.length === 10 && selectedBank) {
+    if (
+      step === 'account' && 
+      accountNumber.length === 10 && 
+      selectedBank && 
+      accountNumber !== lastVerifiedNumber
+    ) {
       handleResolve()
     }
-  }, [accountNumber, selectedBank, step])
+  }, [accountNumber, selectedBank, step, lastVerifiedNumber])
 
   const handleResolve = async () => {
     if (!selectedBank || accountNumber.length !== 10) return
     
+    setLastVerifiedNumber(accountNumber)
     setStep('resolve')
     setLoading(true)
     setError(null)
@@ -81,6 +91,20 @@ export function TransferForm() {
         amount,
       }
       const response = await sendMoney(payload)
+      
+      // Construct a new outgoing Transaction object to update ledger list
+      const newTx: Transaction = {
+        id: response.reference, // Use reference as temp ID
+        direction: 'outgoing',
+        amount: amount,
+        recipientName: resolvedName,
+        recipientBank: selectedBank.name,
+        timestamp: response.timestamp,
+        status: response.status,
+        reference: response.reference,
+      }
+      prependTransaction(newTx)
+      
       setTransferResult(response)
       setStep('result')
     } catch (err: any) {
@@ -95,6 +119,7 @@ export function TransferForm() {
     setStep('bank')
     setSelectedBank(null)
     setAccountNumber('')
+    setLastVerifiedNumber('')
     setResolvedName('')
     setAmount(0)
     setError(null)
