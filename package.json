@@ -6,7 +6,10 @@
     "dev:web": "pnpm --filter web dev",
     "dev:api": "pnpm --filter api start:dev",
     "build": "pnpm -r build",
-    "typecheck": "pnpm -r typecheck"
+    "build:api": "pnpm --filter api build",
+    "build:web": "pnpm --filter web build",
+    "typecheck": "pnpm -r typecheck",
+    "generate:prisma": "pnpm --filter api generate:prisma"
   },
   "devDependencies": {
     "typescript": "^5.4.0"

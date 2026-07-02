@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NombaService } from '../nomba/nomba.service';
 import { SseService } from '../sse/sse.service';
 import { PaymentSession } from 'types';
-import { Prisma } from '../../generated/prisma/client';
+import { Prisma } from '@prisma/client';
 import * as crypto from 'crypto';
 
 /**
