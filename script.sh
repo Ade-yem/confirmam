@@ -275,10 +275,6 @@ NOMBA_API_KEY=your-nomba-api-key
 NOMBA_API_SECRET=your-nomba-api-secret
 NOMBA_BASE_URL=https://api.nomba.com/v1
 WEBHOOK_SECRET=your-webhook-signing-secret
-
-# Frontend
-VITE_API_URL=http://localhost:3000
-VITE_APP_ENV=development
 EOF
 
 # Duplicate configurations safely

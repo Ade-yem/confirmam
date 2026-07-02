@@ -84,7 +84,7 @@ export class AuthController {
       throw new BadRequestException('Authorization code is missing');
     }
     const result = await this.authService.handleGoogleCallback(code);
-    const frontendUrl = process.env.GOOGLE_SUCCESS_REDIRECT_URL || 'http://localhost:5173/login';
+    const frontendUrl = `${process.env.FRONTEND_URL}/login`;
     return res.redirect(`${frontendUrl}?token=${result.token}`);
   }
 

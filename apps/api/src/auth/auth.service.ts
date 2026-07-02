@@ -96,7 +96,7 @@ export class AuthService {
    */
   getGoogleAuthUrl(): string {
     const clientId = process.env.GOOGLE_CLIENT_ID;
-    const redirectUri = process.env.GOOGLE_CALLBACK_URL;
+    const redirectUri = `${process.env.APP_URL}/auth/google/callback`;
 
     if (!clientId || !redirectUri) {
       this.logger.error('Google OAuth credentials not configured in environment variables.');
@@ -120,7 +120,7 @@ export class AuthService {
   async handleGoogleCallback(code: string): Promise<{ token: string; user: { email: string; name: string; }; }> {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    const redirectUri = process.env.GOOGLE_CALLBACK_URL;
+    const redirectUri = `${process.env.APP_URL}/auth/google/callback`;
 
     if (!clientId || !clientSecret || !redirectUri) {
       throw new BadRequestException('Google credentials misconfigured.');
@@ -168,7 +168,7 @@ export class AuthService {
         throw new BadRequestException('Google did not return email information.');
       }
 
-      return this.findOrCreateGoogleMerchant(infoData.email, infoData.name || 'Google User');
+      return this.findOrCreateGoogleMerchant(infoData.email, infoData.name || '');
     } catch (err) {
       this.logger.error('Google callback error occurred', err);
       if (err instanceof BadRequestException) throw err;
