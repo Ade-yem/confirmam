@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react'
 import { BrowserRouter } from 'react-router-dom'
-import { usePaymentEvents } from '../hooks/usePaymentEvents'
-import { useConnection } from '../hooks/useConnection'
-import { useMerchantStore } from '../store/merchantStore'
+import { usePaymentEvents } from '@/hooks/usePaymentEvents'
+import { useConnection } from '@/hooks/useConnection'
+import { useMerchantStore } from '@/store/merchantStore'
 
 interface ProvidersProps {
   children: React.ReactNode

@@ -1,8 +1,8 @@
-import type { Transaction } from '../../types/transaction'
+import type { Transaction } from '@/types/transaction'
 import { ArrowDownLeft, ArrowUpRight } from 'lucide-react'
 import { StatusBadge } from '../common/StatusBadge'
-import { formatNaira, formatTime } from '../../lib/formatters'
-import { cn } from '../../utils/cn'
+import { formatNaira, formatTime } from '@/lib/formatters'
+import { cn } from '@/utils/cn'
 
 interface TransactionCardProps {
   transaction: Transaction

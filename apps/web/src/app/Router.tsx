@@ -1,12 +1,12 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { AppLayout } from '../layouts/AppLayout'
-import { ProtectedRoute } from '../components/common/ProtectedRoute'
-import DashboardScreen from '../pages/Dashboard'
-import ReceivePaymentScreen from '../pages/ReceivePayment'
-import SendMoneyScreen from '../pages/SendMoney'
-import TransactionsScreen from '../pages/Transactions'
-import ProfileScreen from '../pages/Profile'
-import LoginScreen from '../pages/Login'
+import { AppLayout } from '@/layouts/AppLayout'
+import { ProtectedRoute } from '@/components/common/ProtectedRoute'
+import DashboardScreen from '@/pages/Dashboard'
+import ReceivePaymentScreen from '@/pages/ReceivePayment'
+import SendMoneyScreen from '@/pages/SendMoney'
+import TransactionsScreen from '@/pages/Transactions'
+import ProfileScreen from '@/pages/Profile'
+import LoginScreen from '@/pages/Login'
 
 export function AppRouter() {
   return (

@@ -1,5 +1,5 @@
 import { client } from './client'
-import type { PaymentSession } from '../../types/payment'
+import type { PaymentSession } from '@/types/payment'
 
 export async function initiatePaymentSession(amount: number): Promise<PaymentSession> {
   return client

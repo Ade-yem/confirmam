@@ -1,6 +1,5 @@
 import { client } from './client'
-import type { Bank } from './mocks/fixtures'
-import type { SendMoneyPayload, TransferResult } from '../../types/transaction'
+import type { Bank, SendMoneyPayload, TransferResult } from '@/types/transaction'
 
 export async function getBanks(): Promise<Bank[]> {
   return client.get<Bank[]>('/transfers/banks').then((r) => r.data)

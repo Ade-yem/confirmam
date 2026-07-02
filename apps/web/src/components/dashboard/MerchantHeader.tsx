@@ -1,6 +1,6 @@
-import type { Merchant } from '../../types/merchant'
-import { useConnectionStore } from '../../store/connectionStore'
-import { cn } from '../../utils/cn'
+import type { Merchant } from '@/types/merchant'
+import { useConnectionStore } from '@/store/connectionStore'
+import { cn } from '@/utils/cn'
 
 interface MerchantHeaderProps {
   merchant: Merchant

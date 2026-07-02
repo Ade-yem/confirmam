@@ -1,8 +1,8 @@
 import React from 'react'
-import { AppNav } from '../components/common/AppNav'
-import { ConnectionBanner } from '../components/common/ConnectionBanner'
-import { useConnectionStore } from '../store/connectionStore'
-import { cn } from '../utils/cn'
+import { AppNav } from '@/components/common/AppNav'
+import { ConnectionBanner } from '@/components/common/ConnectionBanner'
+import { useConnectionStore } from '@/store/connectionStore'
+import { cn } from '@/utils/cn'
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { networkOnline, sseConnected } = useConnectionStore()

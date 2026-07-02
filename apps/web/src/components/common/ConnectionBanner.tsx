@@ -1,4 +1,4 @@
-import { useConnectionStore } from '../../store/connectionStore'
+import { useConnectionStore } from '@/store/connectionStore'
 import { Loader2, WifiOff, AlertTriangle } from 'lucide-react'
 
 export function ConnectionBanner() {

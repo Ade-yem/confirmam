@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Copy, Check } from 'lucide-react'
-import { formatAccountNumber } from '../../lib/formatters'
-import { cn } from '../../utils/cn'
+import { formatAccountNumber } from '@/lib/formatters'
+import { cn } from '@/utils/cn'
 
 interface VirtualAccountCardProps {
   accountNumber: string

@@ -7,3 +7,4 @@ dist/
 prisma/migrations/dev*
 .env.prod
 .agents/skills/
+.vscode/mcp.json

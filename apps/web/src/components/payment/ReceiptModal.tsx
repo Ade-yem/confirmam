@@ -1,9 +1,9 @@
 import { useState, useRef } from 'react'
-import type { Transaction } from '../../types/transaction'
+import type { Transaction } from '@/types/transaction'
 import { StatusBadge } from '../common/StatusBadge'
-import { formatNaira, formatDate, formatTime } from '../../lib/formatters'
+import { formatNaira, formatDate, formatTime } from '@/lib/formatters'
 import { X, Share2, Copy, Check, FileText, ArrowDownLeft, ArrowUpRight, FileImage, Loader2 } from 'lucide-react'
-import { cn } from '../../utils/cn'
+import { cn } from '@/utils/cn'
 import * as htmlToImage from 'html-to-image'
 import { jsPDF } from 'jspdf'
 

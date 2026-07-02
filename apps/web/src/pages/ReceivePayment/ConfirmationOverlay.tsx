@@ -1,10 +1,10 @@
 import { useEffect } from 'react'
-import { usePaymentStore } from '../../store/paymentStore'
+import { usePaymentStore } from '@/store/paymentStore'
 import { useVoice } from '../../hooks/useVoice'
-import { AmountDisplay } from '../../components/payment/AmountDisplay'
-import { VoiceIndicator } from '../../components/common/VoiceIndicator'
+import { AmountDisplay } from '@/components/payment/AmountDisplay'
+import { VoiceIndicator } from '@/components/common/VoiceIndicator'
 import { Check } from 'lucide-react'
-import { formatTime } from '../../lib/formatters'
+import { formatTime } from '@/lib/formatters'
 
 export function ConfirmationOverlay() {
   const { lastPayment, dismissConfirmation } = usePaymentStore()

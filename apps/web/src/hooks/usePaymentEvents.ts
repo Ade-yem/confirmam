@@ -1,11 +1,11 @@
 import { useEffect } from 'react'
-import { usePaymentStore } from '../store/paymentStore'
-import { useTransactionStore } from '../store/transactionStore'
-import { useConnectionStore } from '../store/connectionStore'
-import { useMerchantStore } from '../store/merchantStore'
-import { connectToPaymentEvents } from '../services/sse/eventSource'
-import type { PaymentEvent } from '../types/payment'
-import type { Transaction } from '../types/transaction'
+import { usePaymentStore } from '@/store/paymentStore'
+import { useTransactionStore } from '@/store/transactionStore'
+import { useConnectionStore } from '@/store/connectionStore'
+import { useMerchantStore } from '@/store/merchantStore'
+import { connectToPaymentEvents } from '@/services/sse/eventSource'
+import type { PaymentEvent } from '@/types/payment'
+import type { Transaction } from '@/types/transaction'
 
 function paymentEventToTransaction(event: PaymentEvent): Transaction {
   return {

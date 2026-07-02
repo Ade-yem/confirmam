@@ -1,5 +1,5 @@
 import { client } from './client'
-import type { AuthResult } from '../../types/auth'
+import type { AuthResult } from '@/types/auth'
 
 export async function loginWithEmail(email: string, password: string): Promise<AuthResult> {
   return client

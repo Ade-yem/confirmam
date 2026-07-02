@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import { useTransactionStore } from '../../store/transactionStore'
-import { TransactionCard } from '../../components/transaction/TransactionCard'
-import { ReceiptModal } from '../../components/payment/ReceiptModal'
-import type { Transaction } from '../../types/transaction'
+import { useTransactionStore } from '@/store/transactionStore'
+import { TransactionCard } from '@/components/transaction/TransactionCard'
+import { ReceiptModal } from '@/components/payment/ReceiptModal'
+import type { Transaction } from '@/types/transaction'
 import { Search, History, ArrowLeftRight, Inbox } from 'lucide-react'
-import { cn } from '../../utils/cn'
+import { cn } from '@/utils/cn'
 
 type FilterType = 'all' | 'incoming' | 'outgoing'
 

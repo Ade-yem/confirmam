@@ -1,4 +1,4 @@
-import type { PaymentEvent } from '../../types/payment'
+import type { PaymentEvent } from '@/types/payment'
 
 type MockPaymentListener = (event: PaymentEvent) => void
 

@@ -1,6 +1,5 @@
 import { client } from './client'
-import type { Customer, WeeklyBar } from './mocks/fixtures'
-import type { DashboardSummary } from '../../types/merchant'
+import type { Customer, WeeklyBar, DashboardSummary } from '@/types/merchant'
 
 export async function getDashboardSummary(): Promise<DashboardSummary> {
   return client.get<DashboardSummary>('/dashboard/summary').then((r) => r.data)

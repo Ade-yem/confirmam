@@ -13,24 +13,34 @@ datasource db {
 }
 
 model Merchant {
-  id           String        @id @default(cuid())
-  email        String        @unique
-  passwordHash String
-  createdAt    DateTime      @default(now())
-  transactions Transaction[]
+  id                   String        @id @default(cuid())
+  email                String        @unique
+  passwordHash         String
+  name                 String        @default("Merchant")
+  phone                String?
+  virtualAccountNumber String        @default("")
+  bankName             String        @default("")
+  createdAt            DateTime      @default(now())
+  transactions         Transaction[]
 }
 
 model Transaction {
-  id          String   @id @default(cuid())
-  amount      Int
-  vaNumber    String
-  ussdString  String
-  status      String   @default("pending")
-  merchantId  String
-  merchant    Merchant @relation(fields: [merchantId], references: [id])
-  webhookRef  String?
-  createdAt   DateTime @default(now())
-  confirmedAt DateTime?
+  id                     String    @id @default(cuid())
+  direction              String    @default("incoming") // "incoming" or "outgoing"
+  amount                 Int
+  vaNumber               String?
+  ussdString             String?
+  status                 String    @default("pending")  // "pending", "confirmed", "failed", "expired"
+  merchantId             String
+  merchant               Merchant  @relation(fields: [merchantId], references: [id])
+  senderName             String?
+  recipientName          String?
+  recipientBank          String?
+  recipientAccountNumber String?
+  reference              String    @unique @default(cuid())
+  webhookRef             String?
+  createdAt              DateTime  @default(now())
+  confirmedAt            DateTime?
 
   @@index([vaNumber])
   @@index([status])

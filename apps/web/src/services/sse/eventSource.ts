@@ -1,4 +1,4 @@
-import type { PaymentEvent } from '../../types/payment'
+import type { PaymentEvent } from '@/types/payment'
 import { subscribeToMockPayments } from './mockEmitter'
 import { USE_MOCKS } from '../api/client'
 

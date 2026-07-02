@@ -1,14 +1,16 @@
 import { useState } from 'react'
-import { usePaymentStore } from '../../store/paymentStore'
-import { initiatePaymentSession } from '../../services/api'
-import { AmountDisplay } from '../../components/payment/AmountDisplay'
-import { VirtualAccountCard } from '../../components/payment/VirtualAccountCard'
-import { QRCard } from '../../components/payment/QRCard'
+import { usePaymentStore } from '@/store/paymentStore'
+import { useMerchantStore } from '@/store/merchantStore'
+import { initiatePaymentSession } from '@/services/api'
+import { AmountDisplay } from '@/components/payment/AmountDisplay'
+import { VirtualAccountCard } from '@/components/payment/VirtualAccountCard'
+import { QRCard } from '@/components/payment/QRCard'
 import { ConfirmationOverlay } from './ConfirmationOverlay'
 import { ArrowLeft, Loader2, Info } from 'lucide-react'
-import { formatNaira } from '../../lib/formatters'
+import { formatNaira } from '@/lib/formatters'
 
 export default function ReceivePaymentScreen() {
+  const { merchant } = useMerchantStore()
   const {
     currentAmount,
     waitingForPayment,
@@ -218,7 +220,10 @@ export default function ReceivePaymentScreen() {
 
         {/* Right column: QR Card */}
         <div className="flex justify-center items-center md:items-start shrink-0">
-          <QRCard data={paymentSession.qrCodeData} className="mx-auto md:mx-0 md:h-full md:justify-center" />
+          <QRCard 
+            data={`confirmam://pay?merchantId=${merchant?.id || 'unknown'}&sessionId=${paymentSession.sessionId}&amount=${paymentSession.amount}`} 
+            className="mx-auto md:mx-0 md:h-full md:justify-center" 
+          />
         </div>
       </div>
     </div>

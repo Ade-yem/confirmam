@@ -1,6 +1,6 @@
-import { useMerchantStore } from '../../store/merchantStore'
+import { useMerchantStore } from '@/store/merchantStore'
 import { useVoice } from '../../hooks/useVoice'
-import { formatAccountNumber } from '../../lib/formatters'
+import { formatAccountNumber } from '@/lib/formatters'
 import { User, Shield, Phone, MapPin, Volume2, Building2 } from 'lucide-react'
 
 export default function ProfileScreen() {

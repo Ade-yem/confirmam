@@ -1,5 +1,5 @@
 import { QRCodeSVG } from 'qrcode.react'
-import { cn } from '../../utils/cn'
+import { cn } from '@/utils/cn'
 
 interface QRCardProps {
   data: string

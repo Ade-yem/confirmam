@@ -1,4 +1,4 @@
-import { TransferForm } from '../../components/transfer/TransferForm'
+import { TransferForm } from '@/components/transfer/TransferForm'
 
 export default function SendMoneyScreen() {
   return (

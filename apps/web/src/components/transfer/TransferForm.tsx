@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react'
-import { getBanks, resolveAccountName, sendMoney } from '../../services/api'
-import type { Bank } from '../../services/api/mocks/fixtures'
-import type { TransferResult, Transaction } from '../../types/transaction'
-import { useTransactionStore } from '../../store/transactionStore'
-import { formatNaira, formatAccountNumber } from '../../lib/formatters'
+import { getBanks, resolveAccountName, sendMoney } from '@/services/api'
+import type { Bank, TransferResult, Transaction } from '@/types/transaction'
+import { useTransactionStore } from '@/store/transactionStore'
+import { formatNaira, formatAccountNumber } from '@/lib/formatters'
 import { Search, Loader2, Check, AlertCircle, ArrowLeft, ArrowRight, Delete } from 'lucide-react'
-import { cn } from '../../utils/cn'
+import { cn } from '@/utils/cn'
 
 type Step = 'bank' | 'account' | 'resolve' | 'amount' | 'confirm' | 'result'
 
@@ -41,18 +40,6 @@ export function TransferForm() {
     loadBanks()
   }, [])
 
-  // Auto-advance to name resolution when 10 digits are typed in Step 2
-  useEffect(() => {
-    if (
-      step === 'account' && 
-      accountNumber.length === 10 && 
-      selectedBank && 
-      accountNumber !== lastVerifiedNumber
-    ) {
-      handleResolve()
-    }
-  }, [accountNumber, selectedBank, step, lastVerifiedNumber])
-
   const handleResolve = async () => {
     if (!selectedBank || accountNumber.length !== 10) return
     
@@ -76,6 +63,18 @@ export function TransferForm() {
       setLoading(false)
     }
   }
+
+  // Auto-advance to name resolution when 10 digits are typed in Step 2
+  useEffect(() => {
+    if (
+      step === 'account' && 
+      accountNumber.length === 10 && 
+      selectedBank && 
+      accountNumber !== lastVerifiedNumber
+    ) {
+      handleResolve()
+    }
+  }, [accountNumber, selectedBank, step, lastVerifiedNumber])
 
   const handleSend = async () => {
     if (!selectedBank || !resolvedName || amount <= 0) return
@@ -350,12 +349,12 @@ export function TransferForm() {
               // Name resolved visually before advance
               <div className="space-y-2">
                 <div className="w-10 h-10 bg-emerald-50 text-emerald rounded-full flex items-center justify-center mx-auto mb-2 animate-bounce">
-                  <Check className="w-5 h-5 stroke-[3]" />
+                  <Check className="w-5 h-5 stroke-3" />
                 </div>
                 <span className="text-[10px] font-bold text-emerald uppercase tracking-wider block">
                   Account Verified
                 </span>
-                <h3 className="text-xl font-extrabold text-midnight tracking-tight max-w-[280px] mx-auto break-words leading-tight">
+                <h3 className="text-xl font-extrabold text-midnight tracking-tight max-w-[280px] mx-auto wrap-break-word leading-tight">
                   {resolvedName}
                 </h3>
               </div>
@@ -464,7 +463,7 @@ export function TransferForm() {
         {step === 'result' && transferResult && selectedBank && (
           <div className="py-8 flex flex-col items-center justify-center text-center space-y-6">
             <div className="w-16 h-16 bg-emerald text-white rounded-full flex items-center justify-center shadow-cta animate-spring-in">
-              <Check className="w-8 h-8 stroke-[3]" />
+              <Check className="w-8 h-8 stroke-3" />
             </div>
 
             <div>

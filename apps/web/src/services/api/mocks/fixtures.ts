@@ -1,22 +1,5 @@
-import type { Merchant, DashboardSummary } from '../../../types/merchant'
-import type { Transaction } from '../../../types/transaction'
-
-export interface Customer {
-  id: string
-  name: string
-  paymentCount: number
-  totalSpent: number
-}
-
-export interface WeeklyBar {
-  day: string
-  amount: number
-}
-
-export interface Bank {
-  code: string
-  name: string
-}
+import type { Merchant, DashboardSummary, Customer, WeeklyBar } from '@/types/merchant'
+import type { Transaction, Bank } from '@/types/transaction'
 
 export const fixtures = {
   dashboardSummary: {

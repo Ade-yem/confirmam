@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useAuthStore } from '../../store/authStore'
-import { loginWithEmail, loginWithGoogle, registerBusiness } from '../../services/api'
-import { sanitiseEmail, sanitiseText } from '../../utils/sanitise'
+import { useAuthStore } from '@/store/authStore'
+import { loginWithEmail, loginWithGoogle, registerBusiness } from '@/services/api'
+import { sanitiseEmail, sanitiseText } from '@/utils/sanitise'
 import { Eye, EyeOff, AlertCircle } from 'lucide-react'
-import { cn } from '../../utils/cn'
+import { cn } from '@/utils/cn'
 
 type Mode = 'login' | 'register'
 

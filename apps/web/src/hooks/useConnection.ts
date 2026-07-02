@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useConnectionStore } from '../store/connectionStore'
+import { useConnectionStore } from '@/store/connectionStore'
 
 export function useConnection() {
   const setNetworkOnline = useConnectionStore((s) => s.setNetworkOnline)
