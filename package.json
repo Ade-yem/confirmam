@@ -5,6 +5,8 @@
     "dev": "pnpm --parallel -r dev",
     "dev:web": "pnpm --filter web dev",
     "dev:api": "pnpm --filter api start:dev",
+    "start:web": "pnpm --filter web start",
+    "start:api": "pnpm --filter api start",
     "build": "pnpm -r build",
     "build:api": "pnpm --filter api build",
     "build:web": "pnpm --filter web build",
