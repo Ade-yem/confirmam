@@ -1,4 +1,12 @@
-import { Controller, Post, Get, Body, Query, Res, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Query,
+  Res,
+  BadRequestException,
+} from '@nestjs/common';
 import * as express from 'express';
 import { AuthService } from './auth.service';
 import { z } from 'zod';
@@ -33,7 +41,11 @@ export class AuthController {
   async register(@Body() body: Record<string, unknown>) {
     const result = registerSchema.safeParse(body);
     if (!result.success) {
-      throw new BadRequestException(result.error.issues[0]?.message || 'Validation failed');
+      const formattedErrors = result.error.issues.map((issue) => {
+        const path = issue.path.join('.');
+        return path ? `${path}: ${issue.message}` : issue.message;
+      });
+      throw new BadRequestException(formattedErrors);
     }
     return this.authService.register(
       result.data.businessName,
@@ -53,7 +65,11 @@ export class AuthController {
   async login(@Body() body: Record<string, unknown>) {
     const result = loginSchema.safeParse(body);
     if (!result.success) {
-      throw new BadRequestException(result.error.issues[0]?.message || 'Validation failed');
+      const formattedErrors = result.error.issues.map((issue) => {
+        const path = issue.path.join('.');
+        return path ? `${path}: ${issue.message}` : issue.message;
+      });
+      throw new BadRequestException(formattedErrors);
     }
     return this.authService.login(result.data.email, result.data.password);
   }
@@ -79,7 +95,10 @@ export class AuthController {
    * @param {Response} res Express response object.
    */
   @Get('google/callback')
-  async googleCallback(@Query('code') code: string, @Res() res: express.Response) {
+  async googleCallback(
+    @Query('code') code: string,
+    @Res() res: express.Response,
+  ) {
     if (!code) {
       throw new BadRequestException('Authorization code is missing');
     }

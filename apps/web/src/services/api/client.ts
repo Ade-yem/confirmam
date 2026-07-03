@@ -107,6 +107,20 @@ client.interceptors.response.use(
     }
 
     console.error('API client error:', error.response?.data || error.message)
+
+    if (error.response?.data?.message) {
+      const serverMessage = error.response.data.message;
+      const parsedMessage = Array.isArray(serverMessage)
+        ? serverMessage.join(', ')
+        : serverMessage;
+      
+      const enrichedError = new Error(parsedMessage);
+      Object.defineProperty(enrichedError, 'response', { value: error.response, enumerable: true });
+      Object.defineProperty(enrichedError, 'request', { value: error.request, enumerable: true });
+      Object.defineProperty(enrichedError, 'config', { value: error.config, enumerable: true });
+      return Promise.reject(enrichedError);
+    }
+
     return Promise.reject(error)
   }
 )

@@ -50,7 +50,9 @@ describe('AuthService', () => {
 
   describe('register', () => {
     it('should throw if merchant exists', async () => {
-      (prisma.merchant.findUnique as jest.Mock).mockResolvedValue({ id: 'exists' });
+      (prisma.merchant.findUnique as jest.Mock).mockResolvedValue({
+        id: 'exists',
+      });
       await expect(
         service.register('Test', 'test@example.com', 'pass'),
       ).rejects.toThrow(BadRequestException);
@@ -64,7 +66,11 @@ describe('AuthService', () => {
         name: 'Test Business',
       });
 
-      const res = await service.register('Test Business', 'test@example.com', 'password123');
+      const res = await service.register(
+        'Test Business',
+        'test@example.com',
+        'password123',
+      );
       expect(res.token).toBe('mocked-token');
       expect(res.user.name).toBe('Test Business');
       expect(prisma.merchant.create).toHaveBeenCalled();

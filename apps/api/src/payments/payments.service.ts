@@ -1,4 +1,9 @@
-import { Injectable, Logger, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NombaService } from '../nomba/nomba.service';
 import { SseService } from '../sse/sse.service';
@@ -68,7 +73,11 @@ export class PaymentsService {
    * @param {string} customerName Name of the paying customer.
    * @returns {Promise<VAResponse>} Configured virtual account payment details.
    */
-  async createSession(merchantId: string, amount: number, merchantName: string): Promise<PaymentSession> {
+  async createSession(
+    merchantId: string,
+    amount: number,
+    merchantName: string,
+  ): Promise<PaymentSession> {
     if (amount <= 0) {
       throw new BadRequestException('Amount must be greater than zero');
     }
@@ -80,7 +89,7 @@ export class PaymentsService {
         amount: Math.round(amount),
         status: 'pending',
         merchantId,
-      }
+      },
     });
 
     try {
@@ -115,8 +124,11 @@ export class PaymentsService {
         expiresAt: expiryDate,
       };
     } catch (err) {
-      this.logger.error(`Failed to provision virtual account for transaction: ${transaction.id}`, err);
-      
+      this.logger.error(
+        `Failed to provision virtual account for transaction: ${transaction.id}`,
+        err,
+      );
+
       // Update transaction status to failed
       await this.prisma.transaction.update({
         where: { id: transaction.id },
@@ -136,9 +148,21 @@ export class PaymentsService {
    * @param {string} timestamp Timestamp header for signature calculation.
    * @param {string} rawBody Unparsed string representation of request body.
    */
-  async handleWebhook(payload: WebhookPayload, signature: string, timestamp: string, rawBody: string): Promise<void> {
+  async handleWebhook(
+    payload: WebhookPayload,
+    signature: string,
+    timestamp: string,
+    rawBody: string,
+  ): Promise<void> {
+    const safePayload = payload ?? {};
+
     // 1. Verify that the request comes legitimately from Nomba
-    const verified = this.verifyWebhookSignature(payload, signature, timestamp, rawBody);
+    const verified = this.verifyWebhookSignature(
+      safePayload,
+      signature,
+      timestamp,
+      rawBody,
+    );
     if (!verified) {
       this.logger.warn('Failed webhook signature verification.');
       throw new UnauthorizedException('Invalid webhook signature');
@@ -147,21 +171,24 @@ export class PaymentsService {
     // 2. Persist the webhook event in raw logs
     const eventRecord = await this.prisma.webhookEvent.create({
       data: {
-        payload: payload as unknown as Prisma.InputJsonValue,
+        payload: safePayload as unknown as Prisma.InputJsonValue,
         processed: false,
       },
     });
 
     // 3. Extract transaction identifier (reference) and event type
-    const eventType = payload.event_type || payload.event;
-    const data = payload.data || {};
-    
+    const eventType = safePayload.event_type || safePayload.event;
+    const data = safePayload.data || {};
+
     // Support both nested Nomba format and flat workspace mock format
     const reference = data.transaction?.aliasAccountReference || data.reference;
-    const webhookTxId = data.transaction?.transactionId || data.reference || 'unknown';
+    const webhookTxId =
+      data.transaction?.transactionId || data.reference || 'unknown';
 
     if (!reference) {
-      this.logger.warn(`Webhook ignored: reference field missing in payload. RequestId: ${payload.requestId}`);
+      this.logger.warn(
+        `Webhook ignored: reference field missing in payload. RequestId: ${safePayload.requestId}`,
+      );
       return;
     }
 
@@ -171,13 +198,17 @@ export class PaymentsService {
     });
 
     if (!transaction) {
-      this.logger.error(`Transaction with reference ${reference} not found in database.`);
+      this.logger.error(
+        `Transaction with reference ${reference} not found in database.`,
+      );
       return;
     }
 
     // If transaction is already completed/confirmed, ignore duplicate webhook calls
     if (transaction.status === 'confirmed') {
-      this.logger.log(`Transaction ${transaction.id} already confirmed. Skipping.`);
+      this.logger.log(
+        `Transaction ${transaction.id} already confirmed. Skipping.`,
+      );
       await this.prisma.webhookEvent.update({
         where: { id: eventRecord.id },
         data: { processed: true },
@@ -186,9 +217,17 @@ export class PaymentsService {
     }
 
     // Process status updates
-    if (eventType === 'payment_success' || eventType === 'payment_confirmed' || eventType === 'confirmed') {
-      const senderName = data.senderName || data.transaction?.aliasAccountName || 'Paying Customer';
-      const senderBank = data.senderBank || data.transaction?.originatingFrom || 'Unknown Bank';
+    if (
+      eventType === 'payment_success' ||
+      eventType === 'payment_confirmed' ||
+      eventType === 'confirmed'
+    ) {
+      const senderName =
+        data.senderName ||
+        data.transaction?.aliasAccountName ||
+        'Paying Customer';
+      const senderBank =
+        data.senderBank || data.transaction?.originatingFrom || 'Unknown Bank';
 
       // 4. Update transaction status in database
       await this.prisma.transaction.update({
@@ -201,7 +240,9 @@ export class PaymentsService {
         },
       });
 
-      this.logger.log(`Payment CONFIRMED for Transaction ${transaction.id}. Broadcasting SSE.`);
+      this.logger.log(
+        `Payment CONFIRMED for Transaction ${transaction.id}. Broadcasting SSE.`,
+      );
 
       // 5. Broadcast real-time SSE payment confirmation to the merchant dashboard
       this.sseService.broadcast(transaction.merchantId, {
@@ -243,17 +284,20 @@ export class PaymentsService {
    * @param {string} rawBody Raw string body from the request buffer.
    * @returns {boolean} True if signatures match or checking is bypassed, otherwise false.
    */
-  private verifyWebhookSignature(payload: WebhookPayload, signature: string, timestamp: string, rawBody: string): boolean {
+  private verifyWebhookSignature(
+    payload: WebhookPayload,
+    signature: string,
+    timestamp: string,
+    rawBody: string,
+  ): boolean {
     const secret = process.env.NOMBA_WEBHOOK_SECRET;
-
-    // Direct bypass check for development
-    if (process.env.NODE_ENV !== 'production' && payload.bypass_signature === true) {
-      return true;
-    }
+    const safePayload = payload ?? {};
 
     if (!secret) {
-      this.logger.warn('NOMBA_WEBHOOK_SECRET is not configured. Webhook signature checking is bypassed.');
-      return true;
+      this.logger.error(
+        'NOMBA_WEBHOOK_SECRET is not configured. Webhook signature verification failed.',
+      );
+      return false;
     }
 
     if (!signature) {
@@ -261,10 +305,10 @@ export class PaymentsService {
     }
 
     try {
-      const eventType = payload.event_type || '';
-      const requestId = payload.requestId || '';
-      const merchant = payload.data?.merchant || {};
-      const transaction = payload.data?.transaction || {};
+      const eventType = safePayload.event_type || '';
+      const requestId = safePayload.requestId || '';
+      const merchant = safePayload.data?.merchant || {};
+      const transaction = safePayload.data?.transaction || {};
       const userId = merchant.userId || '';
       const walletId = merchant.walletId || '';
       const transactionId = transaction.transactionId || '';

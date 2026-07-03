@@ -1,4 +1,12 @@
-import { Controller, Post, Body, Req, Headers, UseGuards, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Req,
+  Headers,
+  UseGuards,
+  BadRequestException,
+} from '@nestjs/common';
 import * as express from 'express';
 import { PaymentsService } from './payments.service';
 import { JwtAuthGuard } from '../common/guards/jwt.guard';
@@ -35,7 +43,9 @@ export class PaymentsController {
   ): Promise<PaymentSession> {
     const result = createSessionSchema.safeParse(body);
     if (!result.success) {
-      throw new BadRequestException(result.error.issues[0]?.message || 'Validation failed');
+      throw new BadRequestException(
+        result.error.issues[0]?.message || 'Validation failed',
+      );
     }
 
     return this.paymentsService.createSession(
@@ -64,9 +74,16 @@ export class PaymentsController {
     @Headers('nomba-timestamp') timestamp: string,
   ) {
     const rawBodyBuffer = (req as unknown as { rawBody?: Buffer }).rawBody;
-    const rawBodyStr = rawBodyBuffer ? rawBodyBuffer.toString('utf8') : JSON.stringify(body);
+    const rawBodyStr = rawBodyBuffer
+      ? rawBodyBuffer.toString('utf8')
+      : JSON.stringify(body);
 
-    await this.paymentsService.handleWebhook(body, signature, timestamp, rawBodyStr);
+    await this.paymentsService.handleWebhook(
+      body,
+      signature,
+      timestamp,
+      rawBodyStr,
+    );
     return { success: true };
   }
 }

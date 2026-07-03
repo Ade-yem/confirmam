@@ -74,7 +74,9 @@ describe('TransfersService', () => {
 
   describe('resolveAccount', () => {
     it('should throw if bank code or account number is missing', async () => {
-      await expect(service.resolveAccount('', '123')).rejects.toThrow(BadRequestException);
+      await expect(service.resolveAccount('', '123')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should query account name lookup from Nomba', async () => {

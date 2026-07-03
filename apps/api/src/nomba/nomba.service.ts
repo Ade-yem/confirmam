@@ -32,7 +32,11 @@ export class NombaService {
    * @throws {HttpException} If the external auth request fails.
    */
   async getAccessToken(): Promise<string> {
-    if (this.accessToken && this.tokenExpiresAt && new Date() < this.tokenExpiresAt) {
+    if (
+      this.accessToken &&
+      this.tokenExpiresAt &&
+      new Date() < this.tokenExpiresAt
+    ) {
       return this.accessToken;
     }
 
@@ -43,8 +47,11 @@ export class NombaService {
 
     // Bypass external call if configuration is missing (useful for mock/dev state)
     if (!clientId || !clientSecret || !accountId) {
-      this.logger.warn('Nomba credentials missing in config. Generating a mock token.');
-      this.accessToken = 'mock-access-token-' + Math.random().toString(36).substring(7);
+      this.logger.warn(
+        'Nomba credentials missing in config. Generating a mock token.',
+      );
+      this.accessToken =
+        'mock-access-token-' + Math.random().toString(36).substring(7);
       this.tokenExpiresAt = new Date(Date.now() + 3600 * 1000); // 1 hour expiry
       return this.accessToken;
     }
@@ -52,12 +59,12 @@ export class NombaService {
     try {
       const url = `${baseUrl}/v1/auth/token/issue`;
       this.logger.log(`Requesting Nomba access token from: ${url}`);
-      
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'accountId': accountId,
+          accountId: accountId,
         },
         body: JSON.stringify({
           grant_type: 'client_credentials',
@@ -68,7 +75,9 @@ export class NombaService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        this.logger.error(`Nomba auth request failed: ${response.status} - ${errorText}`);
+        this.logger.error(
+          `Nomba auth request failed: ${response.status} - ${errorText}`,
+        );
         throw new HttpException(
           `Nomba Auth failed: ${response.statusText}`,
           HttpStatus.BAD_GATEWAY,
@@ -87,7 +96,7 @@ export class NombaService {
       // Set expiration subtracting a 5-minute safety buffer
       const expDate = new Date(body.data.expiresAt);
       this.tokenExpiresAt = new Date(expDate.getTime() - 5 * 60 * 1000);
-      
+
       this.logger.log('Nomba OAuth token successfully refreshed.');
       return this.accessToken;
     } catch (err) {
@@ -107,26 +116,32 @@ export class NombaService {
    * @returns {Promise<NombaCreateVAResponse>} Response details of the provisioned account.
    * @throws {HttpException} If Nomba returns an error or fails.
    */
-  async createVirtualAccount(req: NombaCreateVARequest): Promise<NombaCreateVAResponse> {
+  async createVirtualAccount(
+    req: NombaCreateVARequest,
+  ): Promise<NombaCreateVAResponse> {
     const token = await this.getAccessToken();
     const baseUrl = process.env.NOMBA_BASE_URL || 'https://sandbox.nomba.com';
     const accountId = process.env.NOMBA_MAIN_ACCOUNT_ID || 'mock-account-id';
 
     if (this.accessToken && this.accessToken.startsWith('mock-')) {
       // Mock Sandbox Response
-      this.logger.log(`[MOCK] Provisioning virtual account for ref: ${req.accountRef}`);
+      this.logger.log(
+        `[MOCK] Provisioning virtual account for ref: ${req.accountRef}`,
+      );
       return {
         code: '00',
         description: 'SUCCESS',
         data: {
           createdAt: new Date().toISOString(),
-          accountHolderId: 'holder_mock_' + Math.random().toString(36).substring(7),
+          accountHolderId:
+            'holder_mock_' + Math.random().toString(36).substring(7),
           accountRef: req.accountRef,
           bvn: req.bvn || '',
           accountName: req.accountName,
           currency: 'NGN',
           bankName: 'ConfirmAm Bank',
-          bankAccountNumber: '990' + Math.floor(1000000 + Math.random() * 9000000).toString(),
+          bankAccountNumber:
+            '990' + Math.floor(1000000 + Math.random() * 9000000).toString(),
           bankAccountName: req.accountName,
           expired: false,
         },
@@ -138,15 +153,17 @@ export class NombaService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'accountId': accountId,
+          Authorization: `Bearer ${token}`,
+          accountId: accountId,
         },
         body: JSON.stringify(req),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        this.logger.error(`Nomba Virtual Account creation failed: ${response.status} - ${errorText}`);
+        this.logger.error(
+          `Nomba Virtual Account creation failed: ${response.status} - ${errorText}`,
+        );
         throw new HttpException(
           `Nomba Virtual Account creation error: ${response.statusText}`,
           HttpStatus.BAD_GATEWAY,
@@ -192,10 +209,25 @@ export class NombaService {
         status: true,
         data: [
           { code: '044', name: 'Access Bank', nipCode: null, logo: '' },
-          { code: '057', name: 'Guaranty Trust Bank (GTBank)', nipCode: null, logo: '' },
-          { code: '011', name: 'First Bank of Nigeria', nipCode: null, logo: '' },
+          {
+            code: '057',
+            name: 'Guaranty Trust Bank (GTBank)',
+            nipCode: null,
+            logo: '',
+          },
+          {
+            code: '011',
+            name: 'First Bank of Nigeria',
+            nipCode: null,
+            logo: '',
+          },
           { code: '058', name: 'Zenith Bank', nipCode: null, logo: '' },
-          { code: '033', name: 'United Bank for Africa (UBA)', nipCode: null, logo: '' },
+          {
+            code: '033',
+            name: 'United Bank for Africa (UBA)',
+            nipCode: null,
+            logo: '',
+          },
           { code: '035', name: 'Wema Bank', nipCode: null, logo: '' },
           { code: '50211', name: 'Kuda Bank', nipCode: null, logo: '' },
           { code: '999992', name: 'OPay', nipCode: null, logo: '' },
@@ -209,14 +241,16 @@ export class NombaService {
       const response = await fetch(`${baseUrl}/v1/transfers/bank`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'accountId': accountId,
+          Authorization: `Bearer ${token}`,
+          accountId: accountId,
         },
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        this.logger.error(`Nomba Fetch Banks failed: ${response.status} - ${errorText}`);
+        this.logger.error(
+          `Nomba Fetch Banks failed: ${response.status} - ${errorText}`,
+        );
         throw new HttpException(
           `Nomba Fetch Banks error: ${response.statusText}`,
           HttpStatus.BAD_GATEWAY,
@@ -279,15 +313,17 @@ export class NombaService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'accountId': accountId,
+          Authorization: `Bearer ${token}`,
+          accountId: accountId,
         },
         body: JSON.stringify(req),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        this.logger.error(`Nomba Bank Lookup failed: ${response.status} - ${errorText}`);
+        this.logger.error(
+          `Nomba Bank Lookup failed: ${response.status} - ${errorText}`,
+        );
         throw new HttpException(
           `Verification failed. Verify the details and try again.`,
           HttpStatus.BAD_REQUEST,
@@ -320,7 +356,9 @@ export class NombaService {
    * @returns {Promise<NombaTransferResponse>} Details of the created payout request.
    * @throws {HttpException} If the payout execution fails.
    */
-  async performTransfer(req: NombaTransferRequest): Promise<NombaTransferResponse> {
+  async performTransfer(
+    req: NombaTransferRequest,
+  ): Promise<NombaTransferResponse> {
     const token = await this.getAccessToken();
     const baseUrl = process.env.NOMBA_BASE_URL || 'https://sandbox.nomba.com';
     const accountId = process.env.NOMBA_MAIN_ACCOUNT_ID || 'mock-account-id';
@@ -349,15 +387,17 @@ export class NombaService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'accountId': accountId,
+          Authorization: `Bearer ${token}`,
+          accountId: accountId,
         },
         body: JSON.stringify(req),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        this.logger.error(`Nomba Bank Transfer failed: ${response.status} - ${errorText}`);
+        this.logger.error(
+          `Nomba Bank Transfer failed: ${response.status} - ${errorText}`,
+        );
         throw new HttpException(
           `Bank Transfer failed: ${response.statusText}`,
           HttpStatus.BAD_GATEWAY,

@@ -32,7 +32,7 @@ Create a new merchant account.
   {
     "email": "merchant@example.com",
     "password": "SecurePassword123",
-    "name": "Adeyemi Stores"
+    "businessName": "Adeyemi Stores"
   }
   ```
 - **Response** (`201 Created`):

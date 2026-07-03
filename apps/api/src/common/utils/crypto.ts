@@ -9,7 +9,10 @@ export async function hashPassword(password: string): Promise<string> {
   return `${salt}:${derivedKey.toString('hex')}`;
 }
 
-export async function comparePassword(password: string, hash: string): Promise<boolean> {
+export async function comparePassword(
+  password: string,
+  hash: string,
+): Promise<boolean> {
   const [salt, key] = hash.split(':');
   if (!salt || !key) return false;
   const keyBuffer = Buffer.from(key, 'hex');
