@@ -119,3 +119,92 @@ export interface NombaTransferResponse {
     };
   };
 }
+
+/**
+ * Payload parameters required to create an online checkout order.
+ */
+export interface NombaCheckoutRequest {
+  order: {
+    amount: string;
+    currency: string;
+    callbackUrl: string;
+    customerEmail?: string;
+    orderReference?: string;
+  };
+}
+
+/**
+ * Response structure when a checkout order is created.
+ */
+export interface NombaCheckoutResponse {
+  code: string;
+  description: string;
+  data: {
+    checkoutLink: string;
+    orderReference: string;
+  };
+}
+
+/**
+ * Response structure when fetching checkout transaction/order details.
+ */
+export interface NombaVerifyCheckoutResponse {
+  code: string;
+  description: string;
+  status: boolean;
+  data: {
+    id: string;
+    amount: number;
+    status: string;
+    source: string;
+    fixedCharge: string;
+    gatewayMessage: string;
+    type: string;
+    customerBillerId: string;
+    accountId: string;
+    orderId: string;
+    customerEmail: string;
+    customerId: string;
+    orderReference: string;
+    callbackUrl: string;
+    currency: string;
+    timeCreated: string;
+    timeUpdated: string;
+    paymentVendorReference: string;
+    billingVendorReference: string;
+    senderName: string;
+    userId: string;
+    onlineCheckoutCardPanLast4Digits: string;
+    onlineCheckoutOrderId: string;
+    onlineCheckoutTokenizedCardPayment: string;
+    onlineCheckoutOrderReference: string;
+    onlineCheckoutCurrency: string;
+    responseCode: string;
+    onlineCheckoutPaymentMethod: string;
+    merchantTxRef: string;
+    productId: string;
+    onlineCheckoutCardType: string;
+  }
+
+}
+
+/**
+ * Payload parameters required to refund a checkout order.
+ */
+export interface NombaRefundRequest {
+  transactionId: string;
+  amount?: number;
+}
+
+/**
+ * Response structure when a refund is requested.
+ */
+export interface NombaRefundResponse {
+  code: string;
+  description: string;
+  status?: boolean;
+  data?: {
+    success: boolean;
+    message: string;
+  };
+}

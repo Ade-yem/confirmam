@@ -3,6 +3,7 @@ import {
   Logger,
   BadRequestException,
   UnauthorizedException,
+  NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NombaService } from '../nomba/nomba.service';
@@ -333,5 +334,233 @@ export class PaymentsService {
       this.logger.error('Failed to compute webhook signature', err);
       return false;
     }
+  }
+
+  /**
+   * Generates a new checkout order session from Nomba.
+   *
+   * @param {string} merchantId ID of the initiating merchant.
+   * @param {number} amount Payment amount.
+   * @param {string} [customerEmail] Optional email of the customer.
+   * @returns {Promise<{ checkoutLink: string; orderReference: string; amount: number }>}
+   */
+  async createCheckout(
+    merchantId: string,
+    amount: number,
+    customerEmail?: string,
+  ) {
+    // 1. Create a pending Transaction record
+    const transaction = await this.prisma.transaction.create({
+      data: {
+        direction: 'incoming',
+        amount,
+        status: 'pending',
+        merchantId,
+      },
+    });
+
+    try {
+      // 2. Call Nomba to create the checkout order
+      const nombaRes = await this.nombaService.createCheckoutOrder({
+        order: {
+          amount: amount.toFixed(2),
+          currency: 'NGN',
+          callbackUrl: `${process.env.APP_URL || 'http://localhost:3000'}/payments/callback`,
+          customerEmail,
+          orderReference: transaction.reference,
+        },
+      });
+
+      const checkoutLink = nombaRes.data.checkoutLink;
+
+      // 3. Update the transaction record with the checkout link
+      await this.prisma.transaction.update({
+        where: { id: transaction.id },
+        data: {
+          ussdString: checkoutLink,
+        },
+      });
+
+      return {
+        checkoutLink,
+        orderReference: nombaRes.data.orderReference,
+        amount,
+      };
+    } catch (err) {
+      this.logger.error(
+        `Failed to create checkout order for transaction: ${transaction.id}`,
+        err,
+      );
+
+      await this.prisma.transaction.update({
+        where: { id: transaction.id },
+        data: { status: 'failed' },
+      });
+
+      throw err;
+    }
+  }
+
+  /**
+   * Confirms a checkout transaction details with Nomba.
+   *
+   * @param {string} reference The unique order reference.
+   * @returns {Promise<{ status: string; amount: number; confirmedAt: Date | null }>}
+   */
+  async verifyCheckout(reference: string) {
+    const transaction = await this.prisma.transaction.findUnique({
+      where: { reference },
+    });
+
+    if (!transaction) {
+      throw new NotFoundException(`Transaction with reference ${reference} not found`);
+    }
+
+    // Call Nomba to confirm the transaction status
+    const nombaRes = await this.nombaService.confirmCheckoutTransaction(reference);
+
+    if (nombaRes.status === true) {
+      if (transaction.status !== 'confirmed') {
+        const updatedTx = await this.prisma.transaction.update({
+          where: { id: transaction.id },
+          data: {
+            status: 'confirmed',
+            confirmedAt: new Date(),
+            webhookRef: nombaRes.data.id,
+          },
+        });
+
+        // Broadcast to SSE
+        this.sseService.broadcast(transaction.merchantId, {
+          sessionId: transaction.id,
+          amount: transaction.amount,
+          senderName: transaction.senderName || 'Paying Customer',
+          senderBank: transaction.recipientBank || 'Unknown Bank',
+          timestamp: updatedTx.confirmedAt?.toISOString() || new Date().toISOString(),
+          reference: transaction.reference,
+        });
+
+        return {
+          status: 'confirmed',
+          amount: updatedTx.amount,
+          confirmedAt: updatedTx.confirmedAt,
+        };
+      }
+    }
+
+    return {
+      status: transaction.status,
+      amount: transaction.amount,
+      confirmedAt: transaction.confirmedAt,
+    };
+  }
+
+  /**
+   * Simulates a webhook notification locally for testing purposes.
+   *
+   * @param {string} reference The transaction reference to simulate success for.
+   * @returns {Promise<{ success: boolean; message: string }>}
+   */
+  async simulateWebhook(reference: string) {
+    const transaction = await this.prisma.transaction.findUnique({
+      where: { reference },
+    });
+
+    if (!transaction) {
+      throw new NotFoundException(`Transaction with reference ${reference} not found`);
+    }
+
+    const mockTxId = 'sim_tx_' + Math.random().toString(36).substring(7);
+    const eventType = 'payment_success';
+    const requestId = 'req_' + Math.random().toString(36).substring(7);
+    const userId = 'sim_user';
+    const walletId = 'sim_wallet';
+    const transactionId = mockTxId;
+    const transactionType = 'card';
+    const transactionTime = new Date().toISOString();
+    const transactionResponseCode = '00';
+
+    const webhookPayload = {
+      event_type: eventType,
+      requestId: requestId,
+      data: {
+        reference: reference,
+        merchant: {
+          userId,
+          walletId,
+        },
+        transaction: {
+          aliasAccountReference: reference,
+          transactionAmount: transaction.amount,
+          transactionId: mockTxId,
+          aliasAccountName: 'Simulated Customer',
+          originatingFrom: 'Simulated Bank',
+          type: transactionType,
+          time: transactionTime,
+          responseCode: transactionResponseCode,
+        },
+      },
+    };
+
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const secret = process.env.NOMBA_WEBHOOK_SECRET || 'test-secret';
+    
+    const hashingPayload = `${eventType}:${requestId}:${userId}:${walletId}:${transactionId}:${transactionType}:${transactionTime}:${transactionResponseCode}:${timestamp}`;
+
+    const signature = crypto
+      .createHmac('sha256', secret)
+      .update(hashingPayload)
+      .digest('base64');
+
+    await this.handleWebhook(
+      webhookPayload as any,
+      signature,
+      timestamp,
+      JSON.stringify(webhookPayload),
+    );
+
+    return {
+      success: true,
+      message: 'Webhook simulation event successfully generated and processed.',
+    };
+  }
+
+  /**
+   * Processes a refund for a checkout order.
+   *
+   * @param {string} reference The transaction reference.
+   * @param {number} [amount] Optional refund amount.
+   * @returns {Promise<{ success: boolean; message: string }>}
+   */
+  async refundCheckout(reference: string, amount?: number) {
+    const transaction = await this.prisma.transaction.findUnique({
+      where: { reference },
+    });
+
+    if (!transaction) {
+      throw new NotFoundException(`Transaction with reference ${reference} not found`);
+    }
+
+    if (transaction.status !== 'confirmed' || !transaction.webhookRef) {
+      throw new BadRequestException('Transaction is not confirmed or does not have a Nomba transaction ID');
+    }
+
+    // Call Nomba to process the refund
+    const refundRes = await this.nombaService.refundCheckoutOrder({
+      transactionId: transaction.webhookRef,
+      amount,
+    });
+
+    if (refundRes.data?.success || refundRes.status === true) {
+      await this.prisma.transaction.update({
+        where: { id: transaction.id },
+        data: { status: 'refunded' },
+      });
+    }
+
+    return {
+      success: refundRes.data?.success,
+      message: refundRes.data?.message || refundRes.description,
+    };
   }
 }

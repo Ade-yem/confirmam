@@ -8,6 +8,11 @@ import {
   NombaTransferRequest,
   NombaTransferResponse,
   NombaTokenResponse,
+  NombaCheckoutRequest,
+  NombaCheckoutResponse,
+  NombaVerifyCheckoutResponse,
+  NombaRefundRequest,
+  NombaRefundResponse,
 } from './nomba.types';
 
 /**
@@ -418,6 +423,237 @@ export class NombaService {
       if (err instanceof HttpException) throw err;
       throw new HttpException(
         'Failed to connect to Nomba Outbound Transfer API',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Creates an online checkout order via Nomba.
+   *
+   * @param {NombaCheckoutRequest} req Details of the checkout order.
+   * @returns {Promise<NombaCheckoutResponse>} The created checkout details.
+   */
+  async createCheckoutOrder(
+    req: NombaCheckoutRequest,
+  ): Promise<NombaCheckoutResponse> {
+    const token = await this.getAccessToken();
+    const baseUrl = process.env.NOMBA_BASE_URL || 'https://sandbox.nomba.com';
+    const accountId = process.env.NOMBA_MAIN_ACCOUNT_ID || 'mock-account-id';
+
+    if (this.accessToken && this.accessToken.startsWith('mock-')) {
+      this.logger.log(`[MOCK] Creating online checkout order for amount: ${req.order.amount}`);
+      return {
+        code: '00',
+        description: 'Success',
+        data: {
+          checkoutLink: `https://checkout.nomba.com/sandbox/mock_${req.order.orderReference || Math.random().toString(36).substring(7)}`,
+          orderReference: req.order.orderReference || 'mock_ref_' + Math.random().toString(36).substring(7),
+        },
+      };
+    }
+
+    try {
+      const response = await fetch(`${baseUrl}/v1/checkout/order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          accountId: accountId,
+        },
+        body: JSON.stringify(req),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        this.logger.error(
+          `Nomba Checkout Order creation failed: ${response.status} - ${errorText}`,
+        );
+        throw new HttpException(
+          `Checkout Order creation error: ${response.statusText}`,
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+
+      const body = (await response.json()) as NombaCheckoutResponse;
+      if (body.code !== '00') {
+        throw new HttpException(
+          `Nomba API returned error ${body.code}: ${body.description}`,
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+
+      return body;
+    } catch (err) {
+      this.logger.error('Failed to create checkout order', err);
+      if (err instanceof HttpException) throw err;
+      throw new HttpException(
+        'Failed to connect to Nomba Checkout Order API',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Confirms a checkout transaction details based on order reference.
+   *
+   * @param {string} orderReference Unique reference code.
+   * @param {string} orderId Unique id code.
+   * @returns {Promise<NombaVerifyCheckoutResponse>} Response transaction receipt details.
+   */
+  async confirmCheckoutTransaction(
+    orderReference: string,
+  ): Promise<NombaVerifyCheckoutResponse> {
+    const token = await this.getAccessToken();
+    const baseUrl = process.env.NOMBA_BASE_URL || 'https://sandbox.nomba.com';
+    const accountId = process.env.NOMBA_MAIN_ACCOUNT_ID || 'mock-account-id';
+
+    if (this.accessToken && this.accessToken.startsWith('mock-')) {
+      this.logger.log(`[MOCK] Confirming checkout transaction for reference: ${orderReference}`);
+      return {
+        code: '00',
+        description: 'Success',
+        status: true,
+        data: {
+          orderId: 'mock_order_id_' + Math.random().toString(36).substring(7),
+          orderReference: orderReference,
+          amount: 1000,
+          currency: 'NGN',
+          id: '',
+          status: '',
+          source: '',
+          fixedCharge: '',
+          gatewayMessage: '',
+          type: '',
+          customerBillerId: '',
+          accountId: '',
+          customerEmail: '',
+          customerId: '',
+          callbackUrl: '',
+          timeCreated: '',
+          timeUpdated: '',
+          paymentVendorReference: '',
+          billingVendorReference: '',
+          senderName: '',
+          userId: '',
+          onlineCheckoutCardPanLast4Digits: '',
+          onlineCheckoutOrderId: '',
+          onlineCheckoutTokenizedCardPayment: '',
+          onlineCheckoutOrderReference: '',
+          onlineCheckoutCurrency: '',
+          responseCode: '',
+          onlineCheckoutPaymentMethod: '',
+          merchantTxRef: '',
+          productId: '',
+          onlineCheckoutCardType: ''
+        },
+      };
+    }
+
+    try {
+      const url = `${baseUrl}/v1/transactions/accounts/single?orderReference=${encodeURIComponent(orderReference)}`;
+      const response = await fetch(
+        url,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+            accountId: accountId,
+          }
+        },
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        this.logger.error(
+          `Nomba Confirm Checkout failed: ${response.status} - ${errorText}`,
+        );
+        throw new HttpException(
+          `Confirm Checkout error: ${response.statusText}`,
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+
+      const body = (await response.json()) as NombaVerifyCheckoutResponse;
+      if (body.code !== '00') {
+        throw new HttpException(
+          `Nomba API returned error ${body.code}: ${body.description}`,
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+      return body;
+    } catch (err) {
+      this.logger.error('Failed to confirm checkout transaction', err);
+      if (err instanceof HttpException) throw err;
+      throw new HttpException(
+        'Failed to connect to Nomba Confirm Checkout API',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Process a full or partial refund for a completed checkout transaction.
+   *
+   * @param {NombaRefundRequest} req The refund parameters.
+   * @returns {Promise<NombaRefundResponse>} Successful refund status.
+   */
+  async refundCheckoutOrder(
+    req: NombaRefundRequest,
+  ): Promise<NombaRefundResponse> {
+    const token = await this.getAccessToken();
+    const baseUrl = process.env.NOMBA_BASE_URL || 'https://sandbox.nomba.com';
+    const accountId = process.env.NOMBA_MAIN_ACCOUNT_ID || 'mock-account-id';
+
+    if (this.accessToken && this.accessToken.startsWith('mock-')) {
+      this.logger.log(`[MOCK] Refunding checkout order for transaction: ${req.transactionId}`);
+      return {
+        code: '00',
+        description: 'Success',
+        data: {
+          success: true,
+          message: 'Refund processed successfully',
+        },
+      };
+    }
+
+    try {
+      const response = await fetch(`${baseUrl}/v1/checkout/refund`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          accountId: accountId,
+        },
+        body: JSON.stringify(req),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        this.logger.error(
+          `Nomba Refund Checkout failed: ${response.status} - ${errorText}`,
+        );
+        throw new HttpException(
+          `Refund Checkout error: ${response.statusText}`,
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+
+      const body = (await response.json()) as NombaRefundResponse;
+      if (body.code !== '00') {
+        throw new HttpException(
+          `Nomba API returned error ${body.code}: ${body.description}`,
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+
+      return body;
+    } catch (err) {
+      this.logger.error('Failed to refund checkout order', err);
+      if (err instanceof HttpException) throw err;
+      throw new HttpException(
+        'Failed to connect to Nomba Refund Checkout API',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

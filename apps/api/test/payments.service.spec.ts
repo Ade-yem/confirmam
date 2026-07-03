@@ -44,6 +44,33 @@ describe('PaymentsService', () => {
         bankAccountName: 'Test Business',
       },
     }),
+    createCheckoutOrder: jest.fn().mockResolvedValue({
+      code: '00',
+      data: {
+        checkoutLink: 'https://checkout.nomba.com/sandbox/mock_link',
+        orderReference: 'TX_REF_MOCK',
+      },
+    }),
+    confirmCheckoutTransaction: jest.fn().mockResolvedValue({
+      code: '00',
+      data: {
+        status: true,
+        message: 'Approved',
+        order: {
+          orderId: 'nomba_tx_123',
+          orderReference: 'TX_REF_MOCK',
+          amount: 2000,
+          currency: 'NGN',
+        },
+      },
+    }),
+    refundCheckoutOrder: jest.fn().mockResolvedValue({
+      code: '00',
+      data: {
+        success: true,
+        message: 'Refund processed successfully',
+      },
+    }),
   };
 
   const mockSseService = {
@@ -240,6 +267,119 @@ describe('PaymentsService', () => {
       } finally {
         process.env.NOMBA_WEBHOOK_SECRET = originalSecret;
       }
+    });
+  });
+
+  describe('createCheckout', () => {
+    it('should create a pending transaction, request a checkout order, and save the checkout link', async () => {
+      (prisma.transaction.create as jest.Mock).mockResolvedValue({
+        id: 'tx_checkout_id',
+        reference: 'TX_REF_MOCK',
+        amount: 2000,
+        status: 'pending',
+        merchantId: 'merchant_123',
+      });
+      (prisma.transaction.update as jest.Mock).mockResolvedValue({
+        id: 'tx_checkout_id',
+        status: 'pending',
+      });
+
+      const res = await service.createCheckout('merchant_123', 2000, 'customer@example.com');
+      expect(res.amount).toBe(2000);
+      expect(res.checkoutLink).toBe('https://checkout.nomba.com/sandbox/mock_link');
+      expect(res.orderReference).toBe('TX_REF_MOCK');
+      expect(prisma.transaction.create).toHaveBeenCalled();
+      expect(nomba.createCheckoutOrder).toHaveBeenCalled();
+      expect(prisma.transaction.update).toHaveBeenCalled();
+    });
+  });
+
+  describe('verifyCheckout', () => {
+    it('should confirm checkout status and update transaction when successful', async () => {
+      (prisma.transaction.findUnique as jest.Mock).mockResolvedValue({
+        id: 'tx_checkout_id',
+        reference: 'TX_REF_MOCK',
+        amount: 2000,
+        status: 'pending',
+        merchantId: 'merchant_123',
+      });
+      (prisma.transaction.update as jest.Mock).mockResolvedValue({
+        id: 'tx_checkout_id',
+        status: 'confirmed',
+        amount: 2000,
+        confirmedAt: new Date(),
+      });
+
+      const res = await service.verifyCheckout('TX_REF_MOCK');
+      expect(res.status).toBe('confirmed');
+      expect(prisma.transaction.findUnique).toHaveBeenCalled();
+      expect(nomba.confirmCheckoutTransaction).toHaveBeenCalledWith('TX_REF_MOCK');
+      expect(prisma.transaction.update).toHaveBeenCalled();
+      expect(sse.broadcast).toHaveBeenCalled();
+    });
+  });
+
+  describe('simulateWebhook', () => {
+    it('should successfully simulate a webhook call internally using computed signature', async () => {
+      const secret = 'test-secret';
+      const originalSecret = process.env.NOMBA_WEBHOOK_SECRET;
+      process.env.NOMBA_WEBHOOK_SECRET = secret;
+
+      (prisma.transaction.findUnique as jest.Mock).mockResolvedValue({
+        id: 'tx_123',
+        merchantId: 'merchant_123',
+        amount: 2000,
+        status: 'pending',
+        reference: 'TX_REF_MOCK',
+      });
+      (prisma.webhookEvent.create as jest.Mock).mockResolvedValue({
+        id: 'webhook_event_id',
+      });
+      (prisma.transaction.update as jest.Mock).mockResolvedValue({
+        id: 'tx_123',
+        status: 'confirmed',
+      });
+      (prisma.webhookEvent.update as jest.Mock).mockResolvedValue({
+        id: 'webhook_event_id',
+        processed: true,
+      });
+
+      try {
+        const res = await service.simulateWebhook('TX_REF_MOCK');
+        expect(res.success).toBe(true);
+        expect(prisma.transaction.update).toHaveBeenCalled();
+        expect(sse.broadcast).toHaveBeenCalled();
+      } finally {
+        process.env.NOMBA_WEBHOOK_SECRET = originalSecret;
+      }
+    });
+  });
+
+  describe('refundCheckout', () => {
+    it('should process a refund and update transaction status to refunded', async () => {
+      (prisma.transaction.findUnique as jest.Mock).mockResolvedValue({
+        id: 'tx_checkout_id',
+        reference: 'TX_REF_MOCK',
+        amount: 2000,
+        status: 'confirmed',
+        webhookRef: 'nomba_tx_123',
+        merchantId: 'merchant_123',
+      });
+      (prisma.transaction.update as jest.Mock).mockResolvedValue({
+        id: 'tx_checkout_id',
+        status: 'refunded',
+      });
+
+      const res = await service.refundCheckout('TX_REF_MOCK', 1000);
+      expect(res.success).toBe(true);
+      expect(nomba.refundCheckoutOrder).toHaveBeenCalledWith({
+        transactionId: 'nomba_tx_123',
+        amount: 1000,
+      });
+      expect(prisma.transaction.update).toHaveBeenCalledWith({
+        where: { id: 'tx_checkout_id' },
+        data: { status: 'refunded' },
+      });
     });
   });
 });
