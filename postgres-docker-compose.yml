@@ -10,12 +10,12 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/confirmam-postgresql/data
+      - confirmam_pgdata:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user -d confirmam"]
       interval: 10s
       timeout: 5s
       retries: 5
 volumes:
-  pgdata:
+  confirmam_pgdata:
     driver: local

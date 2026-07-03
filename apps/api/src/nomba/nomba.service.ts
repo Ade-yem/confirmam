@@ -8,6 +8,11 @@ import {
   NombaTransferRequest,
   NombaTransferResponse,
   NombaTokenResponse,
+  NombaCheckoutRequest,
+  NombaCheckoutResponse,
+  NombaVerifyCheckoutResponse,
+  NombaRefundRequest,
+  NombaRefundResponse,
 } from './nomba.types';
 
 /**
@@ -32,7 +37,11 @@ export class NombaService {
    * @throws {HttpException} If the external auth request fails.
    */
   async getAccessToken(): Promise<string> {
-    if (this.accessToken && this.tokenExpiresAt && new Date() < this.tokenExpiresAt) {
+    if (
+      this.accessToken &&
+      this.tokenExpiresAt &&
+      new Date() < this.tokenExpiresAt
+    ) {
       return this.accessToken;
     }
 
@@ -43,8 +52,11 @@ export class NombaService {
 
     // Bypass external call if configuration is missing (useful for mock/dev state)
     if (!clientId || !clientSecret || !accountId) {
-      this.logger.warn('Nomba credentials missing in config. Generating a mock token.');
-      this.accessToken = 'mock-access-token-' + Math.random().toString(36).substring(7);
+      this.logger.warn(
+        'Nomba credentials missing in config. Generating a mock token.',
+      );
+      this.accessToken =
+        'mock-access-token-' + Math.random().toString(36).substring(7);
       this.tokenExpiresAt = new Date(Date.now() + 3600 * 1000); // 1 hour expiry
       return this.accessToken;
     }
@@ -52,12 +64,12 @@ export class NombaService {
     try {
       const url = `${baseUrl}/v1/auth/token/issue`;
       this.logger.log(`Requesting Nomba access token from: ${url}`);
-      
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'accountId': accountId,
+          accountId: accountId,
         },
         body: JSON.stringify({
           grant_type: 'client_credentials',
@@ -68,7 +80,9 @@ export class NombaService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        this.logger.error(`Nomba auth request failed: ${response.status} - ${errorText}`);
+        this.logger.error(
+          `Nomba auth request failed: ${response.status} - ${errorText}`,
+        );
         throw new HttpException(
           `Nomba Auth failed: ${response.statusText}`,
           HttpStatus.BAD_GATEWAY,
@@ -87,7 +101,7 @@ export class NombaService {
       // Set expiration subtracting a 5-minute safety buffer
       const expDate = new Date(body.data.expiresAt);
       this.tokenExpiresAt = new Date(expDate.getTime() - 5 * 60 * 1000);
-      
+
       this.logger.log('Nomba OAuth token successfully refreshed.');
       return this.accessToken;
     } catch (err) {
@@ -107,26 +121,32 @@ export class NombaService {
    * @returns {Promise<NombaCreateVAResponse>} Response details of the provisioned account.
    * @throws {HttpException} If Nomba returns an error or fails.
    */
-  async createVirtualAccount(req: NombaCreateVARequest): Promise<NombaCreateVAResponse> {
+  async createVirtualAccount(
+    req: NombaCreateVARequest,
+  ): Promise<NombaCreateVAResponse> {
     const token = await this.getAccessToken();
     const baseUrl = process.env.NOMBA_BASE_URL || 'https://sandbox.nomba.com';
     const accountId = process.env.NOMBA_MAIN_ACCOUNT_ID || 'mock-account-id';
 
     if (this.accessToken && this.accessToken.startsWith('mock-')) {
       // Mock Sandbox Response
-      this.logger.log(`[MOCK] Provisioning virtual account for ref: ${req.accountRef}`);
+      this.logger.log(
+        `[MOCK] Provisioning virtual account for ref: ${req.accountRef}`,
+      );
       return {
         code: '00',
         description: 'SUCCESS',
         data: {
           createdAt: new Date().toISOString(),
-          accountHolderId: 'holder_mock_' + Math.random().toString(36).substring(7),
+          accountHolderId:
+            'holder_mock_' + Math.random().toString(36).substring(7),
           accountRef: req.accountRef,
           bvn: req.bvn || '',
           accountName: req.accountName,
           currency: 'NGN',
           bankName: 'ConfirmAm Bank',
-          bankAccountNumber: '990' + Math.floor(1000000 + Math.random() * 9000000).toString(),
+          bankAccountNumber:
+            '990' + Math.floor(1000000 + Math.random() * 9000000).toString(),
           bankAccountName: req.accountName,
           expired: false,
         },
@@ -138,15 +158,17 @@ export class NombaService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'accountId': accountId,
+          Authorization: `Bearer ${token}`,
+          accountId: accountId,
         },
         body: JSON.stringify(req),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        this.logger.error(`Nomba Virtual Account creation failed: ${response.status} - ${errorText}`);
+        this.logger.error(
+          `Nomba Virtual Account creation failed: ${response.status} - ${errorText}`,
+        );
         throw new HttpException(
           `Nomba Virtual Account creation error: ${response.statusText}`,
           HttpStatus.BAD_GATEWAY,
@@ -192,10 +214,25 @@ export class NombaService {
         status: true,
         data: [
           { code: '044', name: 'Access Bank', nipCode: null, logo: '' },
-          { code: '057', name: 'Guaranty Trust Bank (GTBank)', nipCode: null, logo: '' },
-          { code: '011', name: 'First Bank of Nigeria', nipCode: null, logo: '' },
+          {
+            code: '057',
+            name: 'Guaranty Trust Bank (GTBank)',
+            nipCode: null,
+            logo: '',
+          },
+          {
+            code: '011',
+            name: 'First Bank of Nigeria',
+            nipCode: null,
+            logo: '',
+          },
           { code: '058', name: 'Zenith Bank', nipCode: null, logo: '' },
-          { code: '033', name: 'United Bank for Africa (UBA)', nipCode: null, logo: '' },
+          {
+            code: '033',
+            name: 'United Bank for Africa (UBA)',
+            nipCode: null,
+            logo: '',
+          },
           { code: '035', name: 'Wema Bank', nipCode: null, logo: '' },
           { code: '50211', name: 'Kuda Bank', nipCode: null, logo: '' },
           { code: '999992', name: 'OPay', nipCode: null, logo: '' },
@@ -209,14 +246,16 @@ export class NombaService {
       const response = await fetch(`${baseUrl}/v1/transfers/bank`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'accountId': accountId,
+          Authorization: `Bearer ${token}`,
+          accountId: accountId,
         },
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        this.logger.error(`Nomba Fetch Banks failed: ${response.status} - ${errorText}`);
+        this.logger.error(
+          `Nomba Fetch Banks failed: ${response.status} - ${errorText}`,
+        );
         throw new HttpException(
           `Nomba Fetch Banks error: ${response.statusText}`,
           HttpStatus.BAD_GATEWAY,
@@ -279,15 +318,17 @@ export class NombaService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'accountId': accountId,
+          Authorization: `Bearer ${token}`,
+          accountId: accountId,
         },
         body: JSON.stringify(req),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        this.logger.error(`Nomba Bank Lookup failed: ${response.status} - ${errorText}`);
+        this.logger.error(
+          `Nomba Bank Lookup failed: ${response.status} - ${errorText}`,
+        );
         throw new HttpException(
           `Verification failed. Verify the details and try again.`,
           HttpStatus.BAD_REQUEST,
@@ -320,7 +361,9 @@ export class NombaService {
    * @returns {Promise<NombaTransferResponse>} Details of the created payout request.
    * @throws {HttpException} If the payout execution fails.
    */
-  async performTransfer(req: NombaTransferRequest): Promise<NombaTransferResponse> {
+  async performTransfer(
+    req: NombaTransferRequest,
+  ): Promise<NombaTransferResponse> {
     const token = await this.getAccessToken();
     const baseUrl = process.env.NOMBA_BASE_URL || 'https://sandbox.nomba.com';
     const accountId = process.env.NOMBA_MAIN_ACCOUNT_ID || 'mock-account-id';
@@ -349,15 +392,17 @@ export class NombaService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'accountId': accountId,
+          Authorization: `Bearer ${token}`,
+          accountId: accountId,
         },
         body: JSON.stringify(req),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        this.logger.error(`Nomba Bank Transfer failed: ${response.status} - ${errorText}`);
+        this.logger.error(
+          `Nomba Bank Transfer failed: ${response.status} - ${errorText}`,
+        );
         throw new HttpException(
           `Bank Transfer failed: ${response.statusText}`,
           HttpStatus.BAD_GATEWAY,
@@ -378,6 +423,237 @@ export class NombaService {
       if (err instanceof HttpException) throw err;
       throw new HttpException(
         'Failed to connect to Nomba Outbound Transfer API',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Creates an online checkout order via Nomba.
+   *
+   * @param {NombaCheckoutRequest} req Details of the checkout order.
+   * @returns {Promise<NombaCheckoutResponse>} The created checkout details.
+   */
+  async createCheckoutOrder(
+    req: NombaCheckoutRequest,
+  ): Promise<NombaCheckoutResponse> {
+    const token = await this.getAccessToken();
+    const baseUrl = process.env.NOMBA_BASE_URL || 'https://sandbox.nomba.com';
+    const accountId = process.env.NOMBA_MAIN_ACCOUNT_ID || 'mock-account-id';
+
+    if (this.accessToken && this.accessToken.startsWith('mock-')) {
+      this.logger.log(`[MOCK] Creating online checkout order for amount: ${req.order.amount}`);
+      return {
+        code: '00',
+        description: 'Success',
+        data: {
+          checkoutLink: `https://checkout.nomba.com/sandbox/mock_${req.order.orderReference || Math.random().toString(36).substring(7)}`,
+          orderReference: req.order.orderReference || 'mock_ref_' + Math.random().toString(36).substring(7),
+        },
+      };
+    }
+
+    try {
+      const response = await fetch(`${baseUrl}/v1/checkout/order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          accountId: accountId,
+        },
+        body: JSON.stringify(req),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        this.logger.error(
+          `Nomba Checkout Order creation failed: ${response.status} - ${errorText}`,
+        );
+        throw new HttpException(
+          `Checkout Order creation error: ${response.statusText}`,
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+
+      const body = (await response.json()) as NombaCheckoutResponse;
+      if (body.code !== '00') {
+        throw new HttpException(
+          `Nomba API returned error ${body.code}: ${body.description}`,
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+
+      return body;
+    } catch (err) {
+      this.logger.error('Failed to create checkout order', err);
+      if (err instanceof HttpException) throw err;
+      throw new HttpException(
+        'Failed to connect to Nomba Checkout Order API',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Confirms a checkout transaction details based on order reference.
+   *
+   * @param {string} orderReference Unique reference code.
+   * @param {string} orderId Unique id code.
+   * @returns {Promise<NombaVerifyCheckoutResponse>} Response transaction receipt details.
+   */
+  async confirmCheckoutTransaction(
+    orderReference: string,
+  ): Promise<NombaVerifyCheckoutResponse> {
+    const token = await this.getAccessToken();
+    const baseUrl = process.env.NOMBA_BASE_URL || 'https://sandbox.nomba.com';
+    const accountId = process.env.NOMBA_MAIN_ACCOUNT_ID || 'mock-account-id';
+
+    if (this.accessToken && this.accessToken.startsWith('mock-')) {
+      this.logger.log(`[MOCK] Confirming checkout transaction for reference: ${orderReference}`);
+      return {
+        code: '00',
+        description: 'Success',
+        status: true,
+        data: {
+          orderId: 'mock_order_id_' + Math.random().toString(36).substring(7),
+          orderReference: orderReference,
+          amount: 1000,
+          currency: 'NGN',
+          id: '',
+          status: '',
+          source: '',
+          fixedCharge: '',
+          gatewayMessage: '',
+          type: '',
+          customerBillerId: '',
+          accountId: '',
+          customerEmail: '',
+          customerId: '',
+          callbackUrl: '',
+          timeCreated: '',
+          timeUpdated: '',
+          paymentVendorReference: '',
+          billingVendorReference: '',
+          senderName: '',
+          userId: '',
+          onlineCheckoutCardPanLast4Digits: '',
+          onlineCheckoutOrderId: '',
+          onlineCheckoutTokenizedCardPayment: '',
+          onlineCheckoutOrderReference: '',
+          onlineCheckoutCurrency: '',
+          responseCode: '',
+          onlineCheckoutPaymentMethod: '',
+          merchantTxRef: '',
+          productId: '',
+          onlineCheckoutCardType: ''
+        },
+      };
+    }
+
+    try {
+      const url = `${baseUrl}/v1/transactions/accounts/single?orderReference=${encodeURIComponent(orderReference)}`;
+      const response = await fetch(
+        url,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+            accountId: accountId,
+          }
+        },
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        this.logger.error(
+          `Nomba Confirm Checkout failed: ${response.status} - ${errorText}`,
+        );
+        throw new HttpException(
+          `Confirm Checkout error: ${response.statusText}`,
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+
+      const body = (await response.json()) as NombaVerifyCheckoutResponse;
+      if (body.code !== '00') {
+        throw new HttpException(
+          `Nomba API returned error ${body.code}: ${body.description}`,
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+      return body;
+    } catch (err) {
+      this.logger.error('Failed to confirm checkout transaction', err);
+      if (err instanceof HttpException) throw err;
+      throw new HttpException(
+        'Failed to connect to Nomba Confirm Checkout API',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Process a full or partial refund for a completed checkout transaction.
+   *
+   * @param {NombaRefundRequest} req The refund parameters.
+   * @returns {Promise<NombaRefundResponse>} Successful refund status.
+   */
+  async refundCheckoutOrder(
+    req: NombaRefundRequest,
+  ): Promise<NombaRefundResponse> {
+    const token = await this.getAccessToken();
+    const baseUrl = process.env.NOMBA_BASE_URL || 'https://sandbox.nomba.com';
+    const accountId = process.env.NOMBA_MAIN_ACCOUNT_ID || 'mock-account-id';
+
+    if (this.accessToken && this.accessToken.startsWith('mock-')) {
+      this.logger.log(`[MOCK] Refunding checkout order for transaction: ${req.transactionId}`);
+      return {
+        code: '00',
+        description: 'Success',
+        data: {
+          success: true,
+          message: 'Refund processed successfully',
+        },
+      };
+    }
+
+    try {
+      const response = await fetch(`${baseUrl}/v1/checkout/refund`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          accountId: accountId,
+        },
+        body: JSON.stringify(req),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        this.logger.error(
+          `Nomba Refund Checkout failed: ${response.status} - ${errorText}`,
+        );
+        throw new HttpException(
+          `Refund Checkout error: ${response.statusText}`,
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+
+      const body = (await response.json()) as NombaRefundResponse;
+      if (body.code !== '00') {
+        throw new HttpException(
+          `Nomba API returned error ${body.code}: ${body.description}`,
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+
+      return body;
+    } catch (err) {
+      this.logger.error('Failed to refund checkout order', err);
+      if (err instanceof HttpException) throw err;
+      throw new HttpException(
+        'Failed to connect to Nomba Refund Checkout API',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

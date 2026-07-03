@@ -1,5 +1,10 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { DashboardService, TopCustomer, WeeklyRevenueBar, DashboardSummary } from './dashboard.service';
+import {
+  DashboardService,
+  TopCustomer,
+  WeeklyRevenueBar,
+  DashboardSummary,
+} from './dashboard.service';
 import { JwtAuthGuard } from '../common/guards/jwt.guard';
 import { CurrentMerchant } from '../common/decorators/current-merchant.decorator';
 

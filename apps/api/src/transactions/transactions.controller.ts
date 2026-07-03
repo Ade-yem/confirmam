@@ -1,5 +1,8 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { TransactionsService, TransactionResponse } from './transactions.service';
+import {
+  TransactionsService,
+  TransactionResponse,
+} from './transactions.service';
 import { JwtAuthGuard } from '../common/guards/jwt.guard';
 import { CurrentMerchant } from '../common/decorators/current-merchant.decorator';
 

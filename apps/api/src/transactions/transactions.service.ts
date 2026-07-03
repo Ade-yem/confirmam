@@ -34,7 +34,10 @@ export class TransactionsService {
    * @param {string} [date] Optional date string (YYYY-MM-DD) to filter results.
    * @returns {Promise<TransactionResponse[]>} List of formatted transactions.
    */
-  async getTransactions(merchantId: string, date?: string): Promise<TransactionResponse[]> {
+  async getTransactions(
+    merchantId: string,
+    date?: string,
+  ): Promise<TransactionResponse[]> {
     const whereClause: Prisma.TransactionWhereInput = { merchantId };
 
     if (date) {

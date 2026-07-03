@@ -9,7 +9,10 @@ import { SSEEvent } from 'types';
  */
 @Injectable()
 export class SseService {
-  private readonly sseSubject = new Subject<{ merchantId: string; event: SSEEvent }>();
+  private readonly sseSubject = new Subject<{
+    merchantId: string;
+    event: SSEEvent;
+  }>();
 
   /**
    * Broadcasts a payment status event to all active SSE streams.
@@ -32,7 +35,7 @@ export class SseService {
       filter((data) => !merchantId || data.merchantId === merchantId),
       map((data) => ({
         data: data.event,
-      } as MessageEvent)),
+      })),
     );
   }
 }

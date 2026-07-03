@@ -1,4 +1,9 @@
-import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NombaService } from '../nomba/nomba.service';
 import { NombaBanksResponse } from '../nomba/nomba.types';
@@ -54,11 +59,19 @@ export class TransfersService {
    * @param {string} accountNumber The bank account number.
    * @returns {Promise<{ name: string }>} Resolved holder name object.
    */
-  async resolveAccount(bankCode: string, accountNumber: string): Promise<{ name: string }> {
+  async resolveAccount(
+    bankCode: string,
+    accountNumber: string,
+  ): Promise<{ name: string }> {
     if (!bankCode || !accountNumber) {
-      throw new BadRequestException('Bank code and account number are required');
+      throw new BadRequestException(
+        'Bank code and account number are required',
+      );
     }
-    const res = await this.nombaService.lookupAccount({ bankCode, accountNumber });
+    const res = await this.nombaService.lookupAccount({
+      bankCode,
+      accountNumber,
+    });
     return { name: res.data.accountName };
   }
 
@@ -73,7 +86,8 @@ export class TransfersService {
     merchantId: string,
     details: TransferDetails,
   ): Promise<TransferResult> {
-    const { amount, recipientBank, recipientAccountNumber, recipientName } = details;
+    const { amount, recipientBank, recipientAccountNumber, recipientName } =
+      details;
 
     if (amount <= 0) {
       throw new BadRequestException('Amount must be positive');
@@ -141,7 +155,10 @@ export class TransfersService {
         timestamp: transaction.createdAt.toISOString(),
       };
     } catch (err) {
-      this.logger.error(`Payout transfer failed for transaction: ${transaction.id}`, err);
+      this.logger.error(
+        `Payout transfer failed for transaction: ${transaction.id}`,
+        err,
+      );
 
       // Set transaction status to failed on API errors
       await this.prisma.transaction.update({

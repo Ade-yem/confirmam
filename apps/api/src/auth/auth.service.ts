@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, UnauthorizedException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  UnauthorizedException,
+  Logger,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { hashPassword, comparePassword } from '../common/utils/crypto';
@@ -26,7 +31,11 @@ export class AuthService {
    * @returns {Promise<{token: string, user: {email: string, name: string}}>} The signed JWT and merchant profile.
    * @throws {BadRequestException} If the email is already in use.
    */
-  async register(businessName: string, email: string, password: string): Promise<{ token: string; user: { email: string; name: string; }; }> {
+  async register(
+    businessName: string,
+    email: string,
+    password: string,
+  ): Promise<{ token: string; user: { email: string; name: string } }> {
     const existing = await this.prisma.merchant.findUnique({
       where: { email },
     });
@@ -64,7 +73,10 @@ export class AuthService {
    * @returns {Promise<{token: string, user: {email: string, name: string}}>} The signed JWT and merchant profile.
    * @throws {UnauthorizedException} If credentials do not match.
    */
-  async login(email: string, password: string): Promise<{ token: string; user: { email: string; name: string; }; }> {
+  async login(
+    email: string,
+    password: string,
+  ): Promise<{ token: string; user: { email: string; name: string } }> {
     const merchant = await this.prisma.merchant.findUnique({
       where: { email },
     });
@@ -96,10 +108,12 @@ export class AuthService {
    */
   getGoogleAuthUrl(): string {
     const clientId = process.env.GOOGLE_CLIENT_ID;
-    const redirectUri = process.env.GOOGLE_CALLBACK_URL;
+    const redirectUri = `${process.env.APP_URL}/auth/google/callback`;
 
     if (!clientId || !redirectUri) {
-      this.logger.error('Google OAuth credentials not configured in environment variables.');
+      this.logger.error(
+        'Google OAuth credentials not configured in environment variables.',
+      );
       throw new BadRequestException('Google login is currently misconfigured.');
     }
 
@@ -117,10 +131,12 @@ export class AuthService {
    * @param {string} code Authorization code received from Google callback.
    * @returns {Promise<{token: string, user: {email: string, name: string}}>} The signed JWT and merchant details.
    */
-  async handleGoogleCallback(code: string): Promise<{ token: string; user: { email: string; name: string; }; }> {
+  async handleGoogleCallback(
+    code: string,
+  ): Promise<{ token: string; user: { email: string; name: string } }> {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    const redirectUri = process.env.GOOGLE_CALLBACK_URL;
+    const redirectUri = `${process.env.APP_URL}/auth/google/callback`;
 
     if (!clientId || !clientSecret || !redirectUri) {
       throw new BadRequestException('Google credentials misconfigured.');
@@ -145,30 +161,47 @@ export class AuthService {
       if (!tokenResponse.ok) {
         const errorText = await tokenResponse.text();
         this.logger.error(`Google token exchange failed: ${errorText}`);
-        throw new BadRequestException('Failed to exchange authorization code with Google.');
+        throw new BadRequestException(
+          'Failed to exchange authorization code with Google.',
+        );
       }
 
-      const tokenData = (await tokenResponse.json()) as { access_token: string };
+      const tokenData = (await tokenResponse.json()) as {
+        access_token: string;
+      };
 
       // Retrieve user info from Google
-      const infoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-        headers: {
-          Authorization: `Bearer ${tokenData.access_token}`,
+      const infoResponse = await fetch(
+        'https://www.googleapis.com/oauth2/v3/userinfo',
+        {
+          headers: {
+            Authorization: `Bearer ${tokenData.access_token}`,
+          },
         },
-      });
+      );
 
       if (!infoResponse.ok) {
         const errorText = await infoResponse.text();
         this.logger.error(`Google userinfo failed: ${errorText}`);
-        throw new BadRequestException('Failed to retrieve user info from Google.');
+        throw new BadRequestException(
+          'Failed to retrieve user info from Google.',
+        );
       }
 
-      const infoData = (await infoResponse.json()) as { email: string; name?: string };
+      const infoData = (await infoResponse.json()) as {
+        email: string;
+        name?: string;
+      };
       if (!infoData.email) {
-        throw new BadRequestException('Google did not return email information.');
+        throw new BadRequestException(
+          'Google did not return email information.',
+        );
       }
 
-      return this.findOrCreateGoogleMerchant(infoData.email, infoData.name || 'Google User');
+      return this.findOrCreateGoogleMerchant(
+        infoData.email,
+        infoData.name || '',
+      );
     } catch (err) {
       this.logger.error('Google callback error occurred', err);
       if (err instanceof BadRequestException) throw err;
@@ -183,9 +216,13 @@ export class AuthService {
    * @param {string} idToken Google ID token sent from the client.
    * @returns {Promise<{token: string, user: {email: string, name: string}}>} The signed JWT and merchant profile.
    */
-  async googleLoginWithToken(idToken: string): Promise<{ token: string; user: { email: string; name: string; }; }> {
+  async googleLoginWithToken(
+    idToken: string,
+  ): Promise<{ token: string; user: { email: string; name: string } }> {
     try {
-      const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
+      const response = await fetch(
+        `https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`,
+      );
       if (!response.ok) {
         const errorText = await response.text();
         this.logger.error(`Google ID token verification failed: ${errorText}`);
@@ -194,13 +231,22 @@ export class AuthService {
 
       const body = (await response.json()) as { email: string; name?: string };
       if (!body.email) {
-        throw new BadRequestException('Google token does not contain email info');
+        throw new BadRequestException(
+          'Google token does not contain email info',
+        );
       }
 
-      return this.findOrCreateGoogleMerchant(body.email, body.name || 'Google User');
+      return this.findOrCreateGoogleMerchant(
+        body.email,
+        body.name || 'Google User',
+      );
     } catch (err) {
       this.logger.error('Failed to verify Google ID token', err);
-      if (err instanceof UnauthorizedException || err instanceof BadRequestException) throw err;
+      if (
+        err instanceof UnauthorizedException ||
+        err instanceof BadRequestException
+      )
+        throw err;
       throw new UnauthorizedException('Google ID token verification failed');
     }
   }
@@ -210,8 +256,14 @@ export class AuthService {
    *
    * @returns {Promise<{token: string, user: {email: string, name: string}}>} Mock JWT and profile.
    */
-  async googleMockLogin(): Promise<{ token: string; user: { email: string; name: string; }; }> {
-    return this.findOrCreateGoogleMerchant('google-user@confirmam.com', 'Google User');
+  async googleMockLogin(): Promise<{
+    token: string;
+    user: { email: string; name: string };
+  }> {
+    return this.findOrCreateGoogleMerchant(
+      'google-user@confirmam.com',
+      'Google User',
+    );
   }
 
   /**
@@ -223,7 +275,10 @@ export class AuthService {
    * @param {string} name Merchant business name.
    * @returns {Promise<{token: string, user: {email: string, name: string}}>} The login details.
    */
-  private async findOrCreateGoogleMerchant(email: string, name: string): Promise<{ token: string; user: { email: string; name: string; }; }> {
+  private async findOrCreateGoogleMerchant(
+    email: string,
+    name: string,
+  ): Promise<{ token: string; user: { email: string; name: string } }> {
     let merchant = await this.prisma.merchant.findUnique({
       where: { email },
     });

@@ -32,7 +32,7 @@ Create a new merchant account.
   {
     "email": "merchant@example.com",
     "password": "SecurePassword123",
-    "name": "Adeyemi Stores"
+    "businessName": "Adeyemi Stores"
   }
   ```
 - **Response** (`201 Created`):
@@ -138,9 +138,9 @@ Verifies a Google credential token (ID token) obtained by the frontend (SSO clie
 
 ---
 
-## 4. Payments & Event Streaming
+## 4. Payments, Checkout & Event Streaming
 
-### Create Payment Session
+### Create Payment Session (Virtual Account)
 Initiates a new payment request and provisions a temporary virtual account.
 - **Route**: `POST /payments/session`
 - **Auth**: **[🔒 Auth Required]**
@@ -166,12 +166,75 @@ Initiates a new payment request and provisions a temporary virtual account.
   > The frontend is responsible for constructing the QR deep link payload using this data:
   > `confirmam://pay?merchantId=${merchantId}&sessionId=${sessionId}&amount=${amount}`
 
+### Create Online Checkout Order
+Generates a new checkout order session from Nomba, providing an online checkout landing page.
+- **Route**: `POST /payments/checkout`
+- **Auth**: **[🔒 Auth Required]**
+- **Request Body**:
+  ```json
+  {
+    "amount": 2000,
+    "customerEmail": "customer@example.com"
+  }
+  ```
+- **Response** (`201 Created`):
+  ```json
+  {
+    "checkoutLink": "https://checkout.nomba.com/sandbox/mock_link",
+    "orderReference": "TX_REF_MOCK",
+    "amount": 2000
+  }
+  ```
+
+### Verify Checkout Transaction
+Confirms the checkout transaction details with Nomba and updates local transaction status.
+- **Route**: `GET /payments/checkout/:reference/verify`
+- **Auth**: **[🔒 Auth Required]**
+- **Response** (`200 OK`):
+  ```json
+  {
+    "status": "confirmed",
+    "amount": 2000,
+    "confirmedAt": "2026-07-03T16:36:00.000Z"
+  }
+  ```
+
+### Simulate Webhook Notification
+Simulates an incoming payment webhook locally for sandbox testing by generating a valid HMAC signature.
+- **Route**: `POST /payments/checkout/:reference/simulate-webhook`
+- **Auth**: Public
+- **Response** (`200 OK`):
+  ```json
+  {
+    "success": true,
+    "message": "Webhook simulation event successfully generated and processed."
+  }
+  ```
+
+### Refund Checkout Order
+Processes a partial or full refund for a completed checkout transaction.
+- **Route**: `POST /payments/checkout/:reference/refund`
+- **Auth**: **[🔒 Auth Required]**
+- **Request Body**:
+  ```json
+  {
+    "amount": 1000
+  }
+  ```
+- **Response** (`200 OK`):
+  ```json
+  {
+    "success": true,
+    "message": "Refund processed successfully"
+  }
+  ```
+
 ### Server-Sent Events (SSE) Stream
 Listen for real-time payment confirmations.
 - **Route**: `GET /payments/stream`
 - **Auth**: Public (connection validation uses query-params/headers depending on EventSource implementation)
 - **Response Type**: `text/event-stream`
-- **Data payload**:Pushes messages under event name `payment_received`. The payload matches the `PaymentEvent` type:
+- **Data payload**: Pushes messages under event name `payment_received`. The payload matches the `PaymentEvent` type:
   ```json
   {
     "sessionId": "tx_abc123xyz",

@@ -1,4 +1,11 @@
-import { Controller, Get, Post, Body, UseGuards, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  UseGuards,
+  BadRequestException,
+} from '@nestjs/common';
 import { TransfersService, TransferResult } from './transfers.service';
 import { JwtAuthGuard } from '../common/guards/jwt.guard';
 import { CurrentMerchant } from '../common/decorators/current-merchant.decorator';
@@ -12,7 +19,9 @@ const resolveSchema = z.object({
 const transferSchema = z.object({
   amount: z.number().positive('Amount must be positive'),
   recipientBank: z.string().min(1, 'Recipient bank is required'),
-  recipientAccountNumber: z.string().min(1, 'Recipient account number is required'),
+  recipientAccountNumber: z
+    .string()
+    .min(1, 'Recipient account number is required'),
   recipientName: z.string().min(1, 'Recipient name is required'),
   narration: z.string().optional(),
 });
@@ -51,9 +60,14 @@ export class TransfersController {
   async resolveAccount(@Body() body: Record<string, unknown>) {
     const result = resolveSchema.safeParse(body);
     if (!result.success) {
-      throw new BadRequestException(result.error.issues[0]?.message || 'Validation failed');
+      throw new BadRequestException(
+        result.error.issues[0]?.message || 'Validation failed',
+      );
     }
-    return this.transfersService.resolveAccount(result.data.bankCode, result.data.accountNumber);
+    return this.transfersService.resolveAccount(
+      result.data.bankCode,
+      result.data.accountNumber,
+    );
   }
 
   /**
@@ -72,7 +86,9 @@ export class TransfersController {
   ): Promise<TransferResult> {
     const result = transferSchema.safeParse(body);
     if (!result.success) {
-      throw new BadRequestException(result.error.issues[0]?.message || 'Validation failed');
+      throw new BadRequestException(
+        result.error.issues[0]?.message || 'Validation failed',
+      );
     }
 
     return this.transfersService.sendTransfer(merchant.id, result.data);

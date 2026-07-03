@@ -1,4 +1,14 @@
-import { Controller, Post, Body, Req, Headers, UseGuards, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Param,
+  Body,
+  Req,
+  Headers,
+  UseGuards,
+  BadRequestException,
+} from '@nestjs/common';
 import * as express from 'express';
 import { PaymentsService } from './payments.service';
 import { JwtAuthGuard } from '../common/guards/jwt.guard';
@@ -8,6 +18,15 @@ import { z } from 'zod';
 
 const createSessionSchema = z.object({
   amount: z.number().positive('Amount must be positive'),
+});
+
+const checkoutSchema = z.object({
+  amount: z.number().positive('Amount must be positive'),
+  customerEmail: z.string().email('Invalid email address').optional(),
+});
+
+const refundSchema = z.object({
+  amount: z.number().positive('Amount must be positive').optional(),
 });
 
 /**
@@ -35,7 +54,9 @@ export class PaymentsController {
   ): Promise<PaymentSession> {
     const result = createSessionSchema.safeParse(body);
     if (!result.success) {
-      throw new BadRequestException(result.error.issues[0]?.message || 'Validation failed');
+      throw new BadRequestException(
+        result.error.issues[0]?.message || 'Validation failed',
+      );
     }
 
     return this.paymentsService.createSession(
@@ -64,9 +85,93 @@ export class PaymentsController {
     @Headers('nomba-timestamp') timestamp: string,
   ) {
     const rawBodyBuffer = (req as unknown as { rawBody?: Buffer }).rawBody;
-    const rawBodyStr = rawBodyBuffer ? rawBodyBuffer.toString('utf8') : JSON.stringify(body);
+    const rawBodyStr = rawBodyBuffer
+      ? rawBodyBuffer.toString('utf8')
+      : JSON.stringify(body);
 
-    await this.paymentsService.handleWebhook(body, signature, timestamp, rawBodyStr);
+    await this.paymentsService.handleWebhook(
+      body,
+      signature,
+      timestamp,
+      rawBodyStr,
+    );
     return { success: true };
+  }
+
+  /**
+   * Generates a new online checkout order session.
+   *
+   * @route POST /payments/checkout
+   * @security JWT Auth
+   */
+  @Post('checkout')
+  @UseGuards(JwtAuthGuard)
+  async createCheckout(
+    @Body() body: Record<string, unknown>,
+    @CurrentMerchant() merchant: { id: string },
+  ) {
+    const result = checkoutSchema.safeParse(body);
+    if (!result.success) {
+      throw new BadRequestException(
+        result.error.issues[0]?.message || 'Validation failed',
+      );
+    }
+
+    return this.paymentsService.createCheckout(
+      merchant.id,
+      result.data.amount,
+      result.data.customerEmail,
+    );
+  }
+
+  /**
+   * Confirms a checkout transaction details with Nomba.
+   *
+   * @route GET /payments/checkout/:orderReference/verify/:orderId
+   * @security JWT Auth
+   */
+  @Get('checkout/:orderReference/verify')
+  @UseGuards(JwtAuthGuard)
+  async verifyCheckout(
+    @Param('orderReference') orderReference: string,
+  ) {
+    return this.paymentsService.verifyCheckout(orderReference);
+  }
+
+  /**
+   * Simulates a webhook notification locally for testing purposes.
+   *
+   * @route POST /payments/checkout/:reference/simulate-webhook
+   */
+  @Post('checkout/:reference/simulate-webhook')
+  async simulateWebhook(
+    @Param('reference') reference: string,
+  ) {
+    return this.paymentsService.simulateWebhook(reference);
+  }
+
+  /**
+   * Processes a refund for a checkout order.
+   *
+   * @route POST /payments/checkout/:reference/refund
+   * @security JWT Auth
+   */
+  @Post('checkout/:reference/refund')
+  @UseGuards(JwtAuthGuard)
+  async refundCheckout(
+    @Param('reference') reference: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    const result = refundSchema.safeParse(body);
+    if (!result.success) {
+      throw new BadRequestException(
+        result.error.issues[0]?.message || 'Validation failed',
+      );
+    }
+
+    return this.paymentsService.refundCheckout(
+      reference,
+      result.data.amount,
+    );
   }
 }
