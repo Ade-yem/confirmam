@@ -7,6 +7,7 @@ interface MerchantState {
   todayRevenue: number
   todayPaymentCount: number
   isLoading: boolean
+  error: string | null
   fetchMerchant: () => Promise<void>
   updateRevenue: (amount: number) => void
 }
@@ -16,21 +17,24 @@ export const useMerchantStore = create<MerchantState>((set) => ({
   todayRevenue: 0,
   todayPaymentCount: 0,
   isLoading: false,
+  error: null,
   fetchMerchant: async () => {
-    set({ isLoading: true })
+    set({ isLoading: true, error: null })
     try {
-      // Import dynamically or directly from the API service
       const profile = await getMerchantProfile()
       const summary = await getDashboardSummary()
       set({
         merchant: profile,
         todayRevenue: summary.todayRevenue,
         todayPaymentCount: summary.todayPaymentCount,
-        isLoading: false
+        isLoading: false,
       })
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching merchant details:', err)
-      set({ isLoading: false })
+      set({
+        error: err.message || 'Failed to fetch merchant profile.',
+        isLoading: false,
+      })
     }
   },
   updateRevenue: (amount) => {

@@ -9,9 +9,10 @@ export interface AuthResult {
 export interface Merchant {
   id: string;
   name: string;
+  email?: string;
   location?: string;
-  virtualAccountNumber: string;
   bankName: string;
+  virtualAccountNumber: string;
 }
 
 export interface DashboardSummary {

@@ -27,10 +27,6 @@ Run from the repository root:
 - Prisma schema changes should be reflected in apps/api/prisma/schema.prisma and corresponding migrations.
 
 ## API Rationale & Session Rules
-- **Webhook Reconciliation (`accountRef`)**: We set the virtual account's `accountRef` to our database transaction's unique `reference` during creation. Rationale: When Nomba sends webhook confirmations to `/payments/webhook`, it returns this reference, permitting instant, deterministic lookups and status transitions.
-- **Merchant Account Holder**: The virtual account's `accountName` is mapped to the merchant's business name (`merchant.name`).
-- **VA Session Expiry**: Virtual accounts are provisioned with an expiration window of exactly **1 hour** (3600 seconds). No BVN details are sent.
-- **QR Code Separation**: The backend generates `qrCodeData` as a raw deep link string (`confirmam://pay?merchantId=...&sessionId=...&amount=...`). The frontend is responsible for rendering the visual QR code client-side; the API does not generate QR images.
 - **SSE Streams**: Pushes successful payments under the event name `payment_received` containing `PaymentEvent` fields (`sessionId`, `amount`, `senderName`, `senderBank`, `timestamp`, `reference`).
 
 ## Architecture priorities

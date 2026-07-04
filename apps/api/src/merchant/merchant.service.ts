@@ -16,7 +16,6 @@ export class MerchantService {
       id: merchant.id,
       name: merchant.name,
       email: merchant.email,
-      bankName: merchant.bankName,
     };
   }
 }

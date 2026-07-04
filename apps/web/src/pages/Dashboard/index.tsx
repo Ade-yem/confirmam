@@ -10,17 +10,18 @@ import { getDashboardSummary } from '@/services/api'
 import type { DashboardSummary } from '@/types/merchant'
 import type { Transaction } from '@/types/transaction'
 import { formatNaira } from '@/lib/formatters'
-import { QrCode, Send, ArrowUpRight, TrendingUp, ArrowLeftRight, Eye, EyeOff } from 'lucide-react'
+import { QrCode, Send, ArrowUpRight, TrendingUp, ArrowLeftRight, Eye, EyeOff, AlertCircle } from 'lucide-react'
 import { cn } from '@/utils/cn'
 
 export default function DashboardScreen() {
   const navigate = useNavigate()
-  const { merchant, todayRevenue, todayPaymentCount, isLoading: storeLoading } = useMerchantStore()
+  const { merchant, todayRevenue, todayPaymentCount, error: storeError, fetchMerchant, isLoading: storeLoading } = useMerchantStore()
   const { transactions, isLoading: txLoading, fetchTransactions } = useTransactionStore()
 
   // Extended features local states
   const [dashboardSummary, setDashboardSummary] = useState<DashboardSummary | null>(null)
   const [loadingSummary, setLoadingSummary] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null)
 
   // Persist show balance state in localStorage for better UX
@@ -44,18 +45,21 @@ export default function DashboardScreen() {
     fetchTransactions()
   }, [fetchTransactions])
 
-  useEffect(() => {
-    async function loadSummary() {
-      setLoadingSummary(true)
-      try {
-        const summary = await getDashboardSummary()
-        setDashboardSummary(summary)
-      } catch (err) {
-        console.error('Failed to load dashboard summary:', err)
-      } finally {
-        setLoadingSummary(false)
-      }
+  const loadSummary = async () => {
+    setLoadingSummary(true)
+    setError(null)
+    try {
+      const summary = await getDashboardSummary()
+      setDashboardSummary(summary)
+    } catch (err: any) {
+      console.error('Failed to load dashboard summary:', err)
+      setError(err.message || 'Failed to load dashboard summary.')
+    } finally {
+      setLoadingSummary(false)
     }
+  }
+
+  useEffect(() => {
     loadSummary()
   }, [])
 
@@ -72,6 +76,26 @@ export default function DashboardScreen() {
     <div className="p-4 md:p-6 lg:p-8 space-y-6">
       {/* Merchant profile header */}
       {merchant && <MerchantHeader merchant={merchant} />}
+
+      {(error || storeError) && (
+        <div className="flex items-center justify-between gap-3 p-4 bg-coral/10 text-coral text-xs font-semibold rounded-2xl border border-coral/10 animate-fade-in select-none">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 animate-pulse" />
+            <span>{error || storeError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (storeError) fetchMerchant()
+              if (error) loadSummary()
+            }}
+            className="px-3.5 py-1.5 bg-coral hover:bg-coral-dark text-white text-[10px] font-bold rounded-xl transition-all shadow-sm"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
 
       {/* Main Responsive Grid:
           - Mobile: Single column
@@ -196,7 +220,19 @@ export default function DashboardScreen() {
           {isLoading ? (
             <div className="space-y-3 flex-1">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-20 bg-gray-100 animate-pulse rounded-xl" />
+                <div key={i} className="flex items-center justify-between p-4 bg-surface rounded-lg border border-white/50 animate-pulse">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-full bg-gray-100" />
+                    <div className="space-y-2">
+                      <div className="h-3 w-28 bg-gray-100 rounded" />
+                      <div className="h-2.5 w-16 bg-gray-100/60 rounded" />
+                    </div>
+                  </div>
+                  <div className="space-y-2 flex flex-col items-end">
+                    <div className="h-4 w-16 bg-gray-100 rounded" />
+                    <div className="h-4.5 w-12 bg-gray-100/60 rounded" />
+                  </div>
+                </div>
               ))}
             </div>
           ) : recentTransactions.length === 0 ? (

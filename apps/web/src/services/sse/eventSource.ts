@@ -6,7 +6,7 @@ export function connectToPaymentEvents(
   onConnectionChange: (connected: boolean) => void
 ): () => void {
   // Production SSE connection
-  const sseBaseUrl = import.meta.env.VITE_SSE_BASE_URL || window.location.origin
+  const sseBaseUrl = import.meta.env.VITE_API_BASE_URL || ""
   const url = `${sseBaseUrl}/events/payments?merchantId=${merchantId}`
   console.log(`[SSE] Connecting to production SSE at: ${url}`)
   

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
-import { loginWithEmail, loginWithGoogle, registerBusiness } from '@/services/api'
+import { loginWithEmail, registerBusiness, getMerchantProfile } from '@/services/api'
 import { sanitiseEmail, sanitiseText } from '@/utils/sanitise'
 import { Eye, EyeOff, AlertCircle } from 'lucide-react'
 import { cn } from '@/utils/cn'
@@ -43,6 +43,37 @@ export default function LoginScreen() {
       navigate(from, { replace: true })
     }
   }, [isAuthenticated, navigate, from])
+
+  // Check for Google OAuth callback token in query params
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const urlToken = params.get('token')
+    if (urlToken) {
+      setIsLoading(true)
+      // Set the token temporarily so request interceptor includes it
+      useAuthStore.setState({ token: urlToken })
+      
+      getMerchantProfile()
+        .then((profile) => {
+          login({
+            token: urlToken,
+            user: {
+              email: profile.email || '',
+              name: profile.name,
+            },
+          })
+          navigate(from, { replace: true })
+        })
+        .catch((err) => {
+          console.error('Failed to login with Google token', err)
+          setGeneralError('Google sign-in failed. Please try again.')
+          useAuthStore.getState().logout()
+        })
+        .finally(() => {
+          setIsLoading(false)
+        })
+    }
+  }, [location.search, navigate, login, from])
 
   // Clear errors and input fields when changing modes
   const handleToggleMode = (targetMode: Mode) => {
@@ -121,6 +152,7 @@ export default function LoginScreen() {
     try {
       if (mode === 'login') {
         const response = await loginWithEmail(cleanEmail, cleanPassword)
+        
         login(response)
       } else {
         const response = await registerBusiness(cleanBusinessName, cleanEmail, cleanPassword)
@@ -134,18 +166,11 @@ export default function LoginScreen() {
     }
   }
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = () => {
     setGeneralError(null)
     setIsLoading(true)
-    try {
-      const response = await loginWithGoogle()
-      login(response)
-    } catch (err: any) {
-      console.error(err)
-      setGeneralError(err.message || 'Google sign-in failed. Please try again.')
-    } finally {
-      setIsLoading(false)
-    }
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || ""
+    window.location.href = `${apiBaseUrl}/auth/google`
   }
 
   return (
@@ -341,9 +366,9 @@ export default function LoginScreen() {
 
         {/* Divider */}
         <div className="flex items-center my-5">
-          <div className="flex-grow border-t border-gray-100" />
+          <div className="grow border-t border-gray-100" />
           <span className="text-[10px] font-bold text-midnight-40 px-3 uppercase tracking-wider">or</span>
-          <div className="flex-grow border-t border-gray-100" />
+          <div className="grow border-t border-gray-100" />
         </div>
 
         {/* Google Secondary CTA */}

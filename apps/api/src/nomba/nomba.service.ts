@@ -243,6 +243,7 @@ export class NombaService {
     }
 
     try {
+      this.logger.debug("Getting banks, authToken", `Bearer ${token}`, `${baseUrl}/v1/transfers/bank`)
       const response = await fetch(`${baseUrl}/v1/transfers/bank`, {
         method: 'GET',
         headers: {

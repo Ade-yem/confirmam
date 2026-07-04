@@ -22,7 +22,7 @@ const createSessionSchema = z.object({
 
 const checkoutSchema = z.object({
   amount: z.number().positive('Amount must be positive'),
-  customerEmail: z.string().email('Invalid email address').optional(),
+  customerEmail: z.email('Invalid email address').optional(),
 });
 
 const refundSchema = z.object({

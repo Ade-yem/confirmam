@@ -106,22 +106,4 @@ export class AuthController {
     const frontendUrl = `${process.env.FRONTEND_URL}/login`;
     return res.redirect(`${frontendUrl}?token=${result.token}`);
   }
-
-  /**
-   * Endpoint for direct Google login. Supports either verification of a client-side
-   * ID token (credential) or falls back to mock user login in development environment.
-   *
-   * @route POST /auth/google
-   * @param {Record<string, unknown>} body HTTP request body containing token or credentials.
-   * @returns {Promise<{token: string, user: {email: string, name: string}}>} JWT and user info.
-   */
-  @Post('google')
-  async googlePost(@Body() body: Record<string, unknown>) {
-    const idToken = (body?.credential || body?.token) as string | undefined;
-    if (idToken) {
-      return this.authService.googleLoginWithToken(idToken);
-    }
-    // Fallback to development mock login
-    return this.authService.googleMockLogin();
-  }
 }

@@ -3,13 +3,13 @@ import { useTransactionStore } from '@/store/transactionStore'
 import { TransactionCard } from '@/components/transaction/TransactionCard'
 import { ReceiptModal } from '@/components/payment/ReceiptModal'
 import type { Transaction } from '@/types/transaction'
-import { Search, History, ArrowLeftRight, Inbox } from 'lucide-react'
+import { Search, History, ArrowLeftRight, Inbox, AlertCircle } from 'lucide-react'
 import { cn } from '@/utils/cn'
 
 type FilterType = 'all' | 'incoming' | 'outgoing'
 
 export default function TransactionsScreen() {
-  const { transactions, isLoading, fetchTransactions } = useTransactionStore()
+  const { transactions, isLoading, error, fetchTransactions } = useTransactionStore()
   
   const [filter, setFilter] = useState<FilterType>('all')
   const [searchQuery, setSearchQuery] = useState('')
@@ -63,6 +63,23 @@ export default function TransactionsScreen() {
         </div>
       </div>
 
+      {error && (
+        <div className="flex items-center justify-between gap-3 p-4 bg-coral/10 text-coral text-xs font-semibold rounded-2xl border border-coral/10 animate-fade-in select-none">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 animate-pulse" />
+            <span>{error}</span>
+          </div>
+          <button
+            type="button"
+            onClick={fetchTransactions}
+            className="px-3.5 py-1.5 bg-coral hover:bg-coral-dark text-white text-[10px] font-bold rounded-xl transition-all shadow-sm"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+
       {/* Search and Filters panel */}
       {hasTransactionsToday && (
         <div className="space-y-3.5 bg-white p-4 rounded-2xl border border-gray-100 shadow-card select-none">
@@ -105,7 +122,19 @@ export default function TransactionsScreen() {
           /* Pulse skeletons loading state */
           <div className="space-y-3.5 flex-1">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="h-20 bg-gray-100 animate-pulse rounded-2xl" />
+              <div key={i} className="flex items-center justify-between p-4 bg-surface rounded-lg border border-white/50 animate-pulse">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-10 h-10 rounded-full bg-gray-100" />
+                  <div className="space-y-2">
+                    <div className="h-3 w-28 bg-gray-100 rounded" />
+                    <div className="h-2.5 w-16 bg-gray-100/60 rounded" />
+                  </div>
+                </div>
+                <div className="space-y-2 flex flex-col items-end">
+                  <div className="h-4 w-16 bg-gray-100 rounded" />
+                  <div className="h-4.5 w-12 bg-gray-100/60 rounded" />
+                </div>
+              </div>
             ))}
           </div>
         ) : !hasTransactionsToday ? (

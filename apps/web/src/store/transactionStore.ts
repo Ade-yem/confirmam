@@ -5,6 +5,7 @@ import { getTransactions } from '../services/api'
 interface TransactionState {
   transactions: Transaction[]
   isLoading: boolean
+  error: string | null
   fetchTransactions: () => Promise<void>
   prependTransaction: (tx: Transaction) => void
 }
@@ -12,14 +13,15 @@ interface TransactionState {
 export const useTransactionStore = create<TransactionState>((set) => ({
   transactions: [],
   isLoading: false,
+  error: null,
   fetchTransactions: async () => {
-    set({ isLoading: true })
+    set({ isLoading: true, error: null })
     try {
       const txs = await getTransactions()
       set({ transactions: txs, isLoading: false })
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching transactions:', err)
-      set({ isLoading: false })
+      set({ error: err.message || 'Failed to fetch transactions.', isLoading: false })
     }
   },
   prependTransaction: (tx) => {

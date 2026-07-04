@@ -31,10 +31,12 @@ export function TransferForm() {
   useEffect(() => {
     async function loadBanks() {
       try {
+        setError(null)
         const banksList = await getBanks()
         setBanks(banksList)
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to load banks:', err)
+        setError(err.message || 'Failed to load bank list. Please try again.')
       }
     }
     loadBanks()

@@ -13,9 +13,46 @@ export default function ProfileScreen() {
 
   if (isLoading) {
     return (
-      <div className="p-4 md:p-6 lg:p-8 max-w-xl mx-auto space-y-6 animate-pulse">
-        <div className="h-28 bg-gray-100 rounded-2xl" />
-        <div className="h-44 bg-gray-100 rounded-2xl" />
+      <div className="p-4 md:p-6 lg:p-8 max-w-xl mx-auto space-y-6 animate-pulse select-none">
+        {/* Screen Header Skeleton */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-gray-100" />
+          <div className="space-y-2">
+            <div className="h-4 w-32 bg-gray-100 rounded" />
+            <div className="h-3 w-48 bg-gray-100/60 rounded" />
+          </div>
+        </div>
+
+        {/* Profile Card Skeleton */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-4">
+          <div className="flex items-center gap-4 border-b border-gray-50 pb-4">
+            <div className="w-14 h-14 rounded-full bg-gray-100" />
+            <div className="space-y-2">
+              <div className="h-4 w-36 bg-gray-100 rounded" />
+              <div className="h-3 w-24 bg-gray-100/60 rounded" />
+            </div>
+          </div>
+          <div className="space-y-3">
+            <div className="h-3 w-40 bg-gray-100 rounded" />
+            <div className="h-3 w-36 bg-gray-100 rounded" />
+            <div className="h-3 w-48 bg-gray-100 rounded" />
+          </div>
+        </div>
+
+        {/* Bank Details Card Skeleton */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-3">
+          <div className="h-3 w-28 bg-gray-100 rounded" />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <div className="h-2 w-12 bg-gray-100/60 rounded" />
+              <div className="h-3.5 w-24 bg-gray-100 rounded" />
+            </div>
+            <div className="space-y-2">
+              <div className="h-2 w-16 bg-gray-100/60 rounded" />
+              <div className="h-3.5 w-28 bg-gray-100 rounded" />
+            </div>
+          </div>
+        </div>
       </div>
     )
   }

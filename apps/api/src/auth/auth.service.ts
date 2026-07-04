@@ -252,21 +252,6 @@ export class AuthService {
   }
 
   /**
-   * Simulates a mock Google login flow for sandbox/local testing.
-   *
-   * @returns {Promise<{token: string, user: {email: string, name: string}}>} Mock JWT and profile.
-   */
-  async googleMockLogin(): Promise<{
-    token: string;
-    user: { email: string; name: string };
-  }> {
-    return this.findOrCreateGoogleMerchant(
-      'google-user@confirmam.com',
-      'Google User',
-    );
-  }
-
-  /**
    * Finds a merchant by email or provisions a new one if not found.
    * Helper function for Google OAuth integrations.
    *
